@@ -87,7 +87,7 @@ export class ExcelExporter {
     titleCell.font = { bold: true, size: 16 };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     
-    // Project details
+    // Project details - Row 3
     worksheet.mergeCells('A3:C3');
     worksheet.getCell('A3').value = `Project: ${project.name}`;
     worksheet.getCell('A3').font = { bold: true };
@@ -100,15 +100,30 @@ export class ExcelExporter {
     worksheet.getCell('G3').value = `Date: ${new Date().toLocaleDateString()}`;
     worksheet.getCell('G3').font = { bold: true };
     
+    // Profile information - Row 4 (if profile is specified)
+    if (project.codeProfileId) {
+      // Simple fallback approach - just show the profile ID and basic info
+      worksheet.mergeCells('A4:F4');
+      worksheet.getCell('A4').value = `Code Profile: ${project.codeProfileId}`;
+      worksheet.getCell('A4').font = { bold: true, color: { argb: 'FF0066CC' } };
+      
+      worksheet.mergeCells('G4:K4');
+      worksheet.getCell('G4').value = `Hook Multiplier: ${project.defaultHookMultiplier}x, Cover: ${project.defaultCover}mm`;
+      worksheet.getCell('G4').font = { bold: true, color: { argb: 'FF0066CC' } };
+    }
+    
     // Add some spacing
-    worksheet.getRow(4).height = 10;
+    const spacingRow = project.codeProfileId ? 5 : 4;
+    worksheet.getRow(spacingRow).height = 10;
   }
 
   /**
    * Add BBS table with all calculated fields
    */
   private static addBBSTable(worksheet: ExcelJS.Worksheet, bars: CalculatedBar[]): void {
-    const startRow = 5;
+    // Calculate start row based on whether profile info is present
+    const hasProfileInfo = worksheet.getCell('A4').value !== null;
+    const startRow = hasProfileInfo ? 6 : 5;
     
     // Headers
     const headers = [
@@ -330,7 +345,8 @@ export class ExcelExporter {
     this.addProjectHeader(worksheet, project);
     
     // Summary table
-    const startRow = 5;
+    const hasProfileInfo = worksheet.getCell('A4').value !== null;
+    const startRow = hasProfileInfo ? 6 : 5;
     const headers = ['Diameter (mm)', 'Bar Count', 'Total Length (m)', 'Total Weight (kg)'];
     
     // Add headers
@@ -407,7 +423,8 @@ export class ExcelExporter {
     this.addProjectHeader(worksheet, project);
     
     // Summary table
-    const startRow = 5;
+    const hasProfileInfo = worksheet.getCell('A4').value !== null;
+    const startRow = hasProfileInfo ? 6 : 5;
     const headers = ['Shape Code', 'Shape Name', 'Bar Count', 'Total Length (m)', 'Total Weight (kg)'];
     
     // Add headers
@@ -490,7 +507,8 @@ export class ExcelExporter {
     this.addProjectHeader(worksheet, project);
     
     // Summary table
-    const startRow = 5;
+    const hasProfileInfo = worksheet.getCell('A4').value !== null;
+    const startRow = hasProfileInfo ? 6 : 5;
     const headers = ['Member Type', 'Bar Count', 'Total Length (m)', 'Total Weight (kg)'];
     
     // Add headers

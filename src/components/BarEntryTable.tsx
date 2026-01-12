@@ -6,7 +6,7 @@ import {
   flexRender,
   type ColumnDef,
 } from '@tanstack/react-table';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, Calculator } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,8 @@ import { SHAPE_DEFINITIONS, MEMBER_DEFAULTS } from '@/lib/constants';
 import { calculateBar } from '@/lib/calculator';
 import { ShapeIcon } from './ShapeDiagram';
 import { BarSummaryCards } from './BarSummaryCards';
+import { FormulaTooltip } from './FormulaTooltip';
+import { FormulaBreakdownModal } from './FormulaBreakdownModal';
 
 interface BarEntryTableProps {
   data: BarEntry[];
@@ -51,6 +53,7 @@ export function BarEntryTable({
 }: BarEntryTableProps) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [selectedBarForFormula, setSelectedBarForFormula] = useState<BarEntry | null>(null);
 
   // Calculate results for all bars
   const calculatedData: CalculatedBar[] = useMemo(() => {
@@ -321,11 +324,31 @@ export function BarEntryTable({
     // Calculated columns (read-only)
     columnHelper.accessor('cutLength', {
       header: 'Cut Length (mm)',
-      cell: ({ getValue }) => (
-        <div className="text-right font-mono bg-muted/30 px-2 py-1 rounded">
-          {Math.round(getValue())}
-        </div>
-      ),
+      cell: ({ getValue, row }) => {
+        const cutLength = getValue();
+        const bar = data[row.index]; // Get original bar entry for formula display
+        
+        return (
+          <FormulaTooltip shapeCode={bar.shapeCode}>
+            <div 
+              className="text-right font-mono bg-muted/30 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between gap-2"
+              onClick={() => setSelectedBarForFormula(bar)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedBarForFormula(bar);
+                }
+              }}
+              aria-label={`Cut length ${Math.round(cutLength)}mm. Click for detailed formula breakdown.`}
+            >
+              <span>{Math.round(cutLength)}</span>
+              <Calculator className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </FormulaTooltip>
+        );
+      },
       size: 130,
     }),
     columnHelper.accessor('unitWeight', {
@@ -418,6 +441,7 @@ export function BarEntryTable({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="group"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
@@ -439,6 +463,16 @@ export function BarEntryTable({
 
       {/* Real-time summary cards */}
       <BarSummaryCards bars={calculatedData} />
+
+      {/* Formula Breakdown Modal */}
+      {selectedBarForFormula && (
+        <FormulaBreakdownModal
+          isOpen={!!selectedBarForFormula}
+          onClose={() => setSelectedBarForFormula(null)}
+          bar={selectedBarForFormula}
+          config={projectConfig}
+        />
+      )}
     </div>
   );
 }

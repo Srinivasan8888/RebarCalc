@@ -6,11 +6,13 @@ import { MemberTypeTabs } from './MemberTypeTabs';
 import { SummaryView } from './SummaryCards';
 import { ExportDialog } from './ExportDialog';
 import { ProjectSetupForm } from './ProjectSetupForm';
+import { ProfileSwitchDialog } from './ProfileSwitchDialog';
 import { calculateAll } from '@/lib/calculator';
 import { summarizeByDiameter, summarizeByShape, summarizeByMember } from '@/lib/calculator';
 import { saveToLocalStorage } from '@/lib/local-storage';
-import { Settings, Download, Save, AlertCircle } from 'lucide-react';
+import { Settings, Download, Save, AlertCircle, RefreshCw } from 'lucide-react';
 import type { ProjectConfig, BarEntry, CalculatedBar } from '@/types';
+import { codeProfileService } from '@/services/code-profile-service';
 
 interface ProjectDetailPageProps {
   projectId: string;
@@ -91,6 +93,11 @@ export function ProjectDetailPage({
     setSettingsOpen(false);
   };
 
+  const handleProfileSwitch = (newConfig: ProjectConfig) => {
+    setConfig(newConfig);
+    onConfigUpdate(newConfig);
+  };
+
   const handleBeamBarsChange = (bars: BarEntry[]) => {
     const newAllBars = [
       ...bars,
@@ -147,15 +154,27 @@ export function ProjectDetailPage({
     }
   };
 
+  const currentProfile = config.codeProfileId 
+    ? codeProfileService.getProfile(config.codeProfileId)
+    : null;
+
   return (
     <div className="space-y-6">
       {/* Project Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{config.name}</h1>
-          <p className="text-muted-foreground">
-            {config.codeStandard} Standard • {allBars.length} bars total
-          </p>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <span>{config.codeStandard} Standard</span>
+            {currentProfile && (
+              <>
+                <span>•</span>
+                <span>{currentProfile.name}</span>
+              </>
+            )}
+            <span>•</span>
+            <span>{allBars.length} bars total</span>
+          </div>
         </div>
         
         <div className="flex items-center gap-4">
@@ -164,6 +183,19 @@ export function ProjectDetailPage({
             {getSaveStatusIcon()}
             <span>{getSaveStatusText()}</span>
           </div>
+
+          {/* Profile Switch Button */}
+          <ProfileSwitchDialog
+            currentConfig={config}
+            bars={allBars}
+            onProfileSwitch={handleProfileSwitch}
+            trigger={
+              <Button variant="outline" className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Switch Profile
+              </Button>
+            }
+          />
 
           {/* Export Button */}
           <ExportDialog

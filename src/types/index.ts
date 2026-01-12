@@ -12,6 +12,7 @@ export interface ProjectConfig {
   id: string;
   name: string;
   codeStandard: 'IS' | 'BS' | 'CUSTOM';
+  codeProfileId?: string;         // Selected code profile ID
   defaultCover: number;           // mm
   defaultHookMultiplier: number;  // typically 9
   bendDeductions: BendDeductions;
@@ -93,4 +94,64 @@ export interface MemberDefaults {
   defaultCover: number;
   defaultSpacing: number;
   commonDiameters: number[];
+}
+
+// Code profile definitions
+export interface CodeProfile {
+  id: string;
+  name: string;
+  description: string;
+  standard: string;          // "IS 456:2000", "BS 8110", "Custom"
+  isEditable: boolean;
+  
+  // Default parameters
+  defaultCover: number;
+  defaultHookMultiplier: number;
+  bendDeductions: BendDeductions;
+  
+  // Member-specific defaults
+  memberDefaults: {
+    [K in MemberType]: MemberDefaults;
+  };
+  
+  // Code-specific rules
+  minimumCover: {
+    [K in MemberType]: number;
+  };
+  
+  maximumSpacing: {
+    [K in MemberType]: number;
+  };
+  
+  // Development length factors (for future use)
+  developmentLengthFactors?: {
+    straight: number;
+    hooked: number;
+    compression: number;
+  };
+}
+
+// Code profile service interface
+export interface CodeProfileService {
+  // Get available profiles
+  getAvailableProfiles(): CodeProfile[];
+  
+  // Get specific profile
+  getProfile(id: string): CodeProfile | null;
+  
+  // Create custom profile
+  createCustomProfile(base: CodeProfile, overrides: Partial<CodeProfile>): CodeProfile;
+  
+  // Apply profile to project
+  applyProfile(projectConfig: ProjectConfig, profile: CodeProfile): ProjectConfig;
+  
+  // Validate profile parameters
+  validateProfile(profile: CodeProfile): ValidationResult;
+}
+
+// Validation result interface
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
 }

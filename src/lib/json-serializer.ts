@@ -12,6 +12,7 @@ interface SerializedProjectConfig {
   id: string;
   name: string;
   codeStandard: 'IS' | 'BS' | 'CUSTOM';
+  codeProfileId?: string;  // Optional code profile ID
   defaultCover: number;
   defaultHookMultiplier: number;
   bendDeductions: {
