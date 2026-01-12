@@ -160,13 +160,16 @@ export class FormulaDisplayService {
     const variables = templateStep.variables || [];
     let value = 0;
     let formulaParts: string[] = [];
+    let hookDetails: string[] = [];
     
     for (const variable of variables) {
       if (variable === 'H') {
-        // Hook length calculation
+        // Hook length calculation with detailed breakdown
         const hookLength = calculateHookLength(diameter, config.defaultHookMultiplier);
+        const hookMultiplier = config.defaultHookMultiplier;
         value += hookLength;
-        formulaParts.push(`H = ${config.defaultHookMultiplier} × ${diameter} = ${hookLength}`);
+        formulaParts.push(`H = ${hookMultiplier} × ${diameter} = ${hookLength}`);
+        hookDetails.push(`Hook length: ${hookMultiplier}d = ${hookMultiplier} × ${diameter}mm = ${hookLength}mm`);
       } else if (variable.startsWith('D_')) {
         // This shouldn't happen in add steps, but handle gracefully
         continue;
@@ -191,13 +194,20 @@ export class FormulaDisplayService {
         formulaParts = [`2 × ${B} = ${value}`];
       } else if (templateStep.formula.includes('2 × H')) {
         const hookLength = calculateHookLength(diameter, config.defaultHookMultiplier);
+        const hookMultiplier = config.defaultHookMultiplier;
         value = 2 * hookLength;
         formulaParts = [`2 × H = 2 × ${hookLength} = ${value}`];
+        hookDetails = [`Hook length: ${hookMultiplier}d = ${hookMultiplier} × ${diameter}mm = ${hookLength}mm each`];
       }
     }
     
+    // Combine description with hook details if present
+    const fullDescription = hookDetails.length > 0 
+      ? `${templateStep.description} (${hookDetails.join(', ')})`
+      : templateStep.description;
+    
     return {
-      description: templateStep.description,
+      description: fullDescription,
       formula: formulaParts.join(', '),
       value,
       units: 'mm',
@@ -218,32 +228,46 @@ export class FormulaDisplayService {
     const variables = templateStep.variables || [];
     let value = 0;
     let formulaParts: string[] = [];
+    let bendDetails: string[] = [];
     
     for (const variable of variables) {
       if (variable.includes('D_{90°}')) {
         const deduction = calculateBendDeduction(90, diameter, config);
         const multiplier = this.extractMultiplier(templateStep.formula);
+        const bendMultiplier = config.bendDeductions.deg90;
         value += multiplier * deduction;
         formulaParts.push(`${multiplier} × D_{90°} = ${multiplier} × ${deduction} = ${multiplier * deduction}`);
+        bendDetails.push(`90° bend: ${bendMultiplier}d = ${bendMultiplier} × ${diameter} = ${deduction}mm`);
       } else if (variable.includes('D_{45°}')) {
         const deduction = calculateBendDeduction(45, diameter, config);
         const multiplier = this.extractMultiplier(templateStep.formula);
+        const bendMultiplier = config.bendDeductions.deg45;
         value += multiplier * deduction;
         formulaParts.push(`${multiplier} × D_{45°} = ${multiplier} × ${deduction} = ${multiplier * deduction}`);
+        bendDetails.push(`45° bend: ${bendMultiplier}d = ${bendMultiplier} × ${diameter} = ${deduction}mm`);
       } else if (variable.includes('D_{135°}')) {
         const deduction = calculateBendDeduction(135, diameter, config);
         const multiplier = this.extractMultiplier(templateStep.formula);
+        const bendMultiplier = config.bendDeductions.deg135;
         value += multiplier * deduction;
         formulaParts.push(`${multiplier} × D_{135°} = ${multiplier} × ${deduction} = ${multiplier * deduction}`);
+        bendDetails.push(`135° bend: ${bendMultiplier}d = ${bendMultiplier} × ${diameter} = ${deduction}mm`);
       } else if (variable.includes('D_{180°}')) {
         const deduction = calculateBendDeduction(180, diameter, config);
+        const bendMultiplier = 4; // Standard 180° bend deduction
         value += deduction;
         formulaParts.push(`D_{180°} = ${deduction}`);
+        bendDetails.push(`180° bend: ${bendMultiplier}d = ${bendMultiplier} × ${diameter} = ${deduction}mm`);
       }
     }
     
+    // Combine formula parts with bend details
+    const fullDescription = bendDetails.length > 0 
+      ? `${templateStep.description} (${bendDetails.join(', ')})`
+      : templateStep.description;
+    
     return {
-      description: templateStep.description,
+      description: fullDescription,
       formula: formulaParts.join(', '),
       value,
       units: 'mm',
@@ -348,48 +372,87 @@ export class FormulaDisplayService {
    */
   private getCodeReference(config: ProjectConfig, shapeCode: ShapeCode): string {
     const codeStandard = config.codeStandard;
+    const profileId = config.codeProfileId;
     
     switch (codeStandard) {
       case 'IS':
-        return this.getISCodeReference(shapeCode);
+        return this.getISCodeReference(shapeCode, profileId);
       case 'BS':
-        return this.getBSCodeReference(shapeCode);
+        return this.getBSCodeReference(shapeCode, profileId);
       default:
-        return 'Custom parameters';
+        return this.getCustomCodeReference(shapeCode, profileId);
     }
   }
 
   /**
-   * Get IS code reference
+   * Get IS code reference with specific clauses
    */
-  private getISCodeReference(shapeCode: ShapeCode): string {
+  private getISCodeReference(shapeCode: ShapeCode, profileId?: string): string {
+    const baseStandard = profileId === 'IS456' ? 'IS 456:2000' : 'IS Standard';
+    
     switch (shapeCode) {
-      case 'S3':
-      case 'S6':
-        return 'IS 456:2000, Clause 26.2.2.1 (Hook length = 9d)';
+      case 'S1':
+        return `${baseStandard}, Clause 26.2.1 (Straight bars)`;
       case 'S2':
+        return `${baseStandard}, Clause 26.2.3.1 (90° bends), Clause 26.2.2.1 (Hook length = 9d)`;
+      case 'S3':
+        return `${baseStandard}, Clause 26.2.3.1 (90° bends), Clause 26.2.3.2 (135° bends), Clause 26.2.2.1 (Hook length = 9d)`;
       case 'S4':
+        return `${baseStandard}, Clause 26.2.3.1 (90° bends), Clause 26.2.3.2 (135° bends)`;
       case 'S5':
-        return 'IS 456:2000, Clause 26.2.3 (Bend deductions)';
+        return `${baseStandard}, Clause 26.2.3.1 (90° bends), Clause 26.2.3.3 (Cranked bars)`;
+      case 'S6':
+        return `${baseStandard}, Clause 26.2.3.1 (90° bends), Clause 26.2.2.1 (Hook length = 9d)`;
       default:
-        return 'IS 456:2000';
+        return baseStandard;
     }
   }
 
   /**
-   * Get BS code reference
+   * Get BS code reference with specific clauses
    */
-  private getBSCodeReference(shapeCode: ShapeCode): string {
+  private getBSCodeReference(shapeCode: ShapeCode, profileId?: string): string {
+    const baseStandard = profileId === 'BS8110' ? 'BS 8110-1:1997' : 'BS Standard';
+    
     switch (shapeCode) {
-      case 'S3':
-      case 'S6':
-        return 'BS 8110, Hook length provisions';
+      case 'S1':
+        return `${baseStandard}, Section 3.12.8 (Straight bars)`;
       case 'S2':
+        return `${baseStandard}, Section 3.12.8.2 (Bend allowances), Section 3.12.8.3 (Hook lengths)`;
+      case 'S3':
+        return `${baseStandard}, Section 3.12.8.2 (Bend allowances), Section 3.12.8.3 (Hook lengths), Section 3.12.8.4 (Links and stirrups)`;
       case 'S4':
+        return `${baseStandard}, Section 3.12.8.2 (Bend allowances), Section 3.12.8.4 (Bent-up bars)`;
       case 'S5':
-        return 'BS 8110, Bend deduction provisions';
+        return `${baseStandard}, Section 3.12.8.2 (Bend allowances), Section 3.12.8.5 (Cranked bars)`;
+      case 'S6':
+        return `${baseStandard}, Section 3.12.8.2 (Bend allowances), Section 3.12.8.3 (Hook lengths)`;
       default:
-        return 'BS 8110';
+        return baseStandard;
+    }
+  }
+
+  /**
+   * Get custom code reference
+   */
+  private getCustomCodeReference(shapeCode: ShapeCode, profileId?: string): string {
+    const profileName = profileId || 'Custom';
+    
+    switch (shapeCode) {
+      case 'S1':
+        return `${profileName} profile - Straight bar calculation`;
+      case 'S2':
+        return `${profileName} profile - U-bar with 90° bends and hooks`;
+      case 'S3':
+        return `${profileName} profile - Stirrup with 90° and 135° bends, hooks`;
+      case 'S4':
+        return `${profileName} profile - Bent-up bar with 45° and 135° bends`;
+      case 'S5':
+        return `${profileName} profile - Cranked bar with 90° bends`;
+      case 'S6':
+        return `${profileName} profile - Tee-bar with 90° bends and hooks`;
+      default:
+        return `${profileName} profile`;
     }
   }
 }

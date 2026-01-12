@@ -33,6 +33,7 @@ import { ShapeIcon } from './ShapeDiagram';
 import { BarSummaryCards } from './BarSummaryCards';
 import { FormulaTooltip } from './FormulaTooltip';
 import { FormulaBreakdownModal } from './FormulaBreakdownModal';
+import { CalculationVerificationIndicator } from './CalculationVerificationIndicator';
 
 interface BarEntryTableProps {
   data: BarEntry[];
@@ -329,24 +330,33 @@ export function BarEntryTable({
         const bar = data[row.index]; // Get original bar entry for formula display
         
         return (
-          <FormulaTooltip shapeCode={bar.shapeCode}>
-            <div 
-              className="text-right font-mono bg-muted/30 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between gap-2"
-              onClick={() => setSelectedBarForFormula(bar)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  setSelectedBarForFormula(bar);
-                }
-              }}
-              aria-label={`Cut length ${Math.round(cutLength)}mm. Click for detailed formula breakdown.`}
-            >
-              <span>{Math.round(cutLength)}</span>
-              <Calculator className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="space-y-1">
+            <FormulaTooltip shapeCode={bar.shapeCode}>
+              <div 
+                className="text-right font-mono bg-muted/30 px-2 py-1 rounded cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between gap-2"
+                onClick={() => setSelectedBarForFormula(bar)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedBarForFormula(bar);
+                  }
+                }}
+                aria-label={`Cut length ${Math.round(cutLength)}mm. Click for detailed formula breakdown.`}
+              >
+                <span>{Math.round(cutLength)}</span>
+                <Calculator className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </FormulaTooltip>
+            <div className="flex justify-end">
+              <CalculationVerificationIndicator 
+                bar={bar} 
+                config={projectConfig}
+                className="text-xs"
+              />
             </div>
-          </FormulaTooltip>
+          </div>
         );
       },
       size: 130,

@@ -9,6 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { BarEntry, ProjectConfig } from '@/types';
+import { CalculationVerificationIndicator } from './CalculationVerificationIndicator';
 import { formulaDisplayService, type CalculationStep } from '@/lib/formula-display-service';
 
 interface FormulaBreakdownModalProps {
@@ -50,8 +51,9 @@ export function FormulaBreakdownModal({
               {breakdown.formula}
             </div>
             {breakdown.codeReference && (
-              <div className="mt-2 text-sm text-muted-foreground">
-                Reference: {breakdown.codeReference}
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                <div className="text-sm font-medium text-blue-900 mb-1">Code Reference</div>
+                <div className="text-sm text-blue-800">{breakdown.codeReference}</div>
               </div>
             )}
           </div>
@@ -114,15 +116,47 @@ export function FormulaBreakdownModal({
             </div>
           </div>
 
+          {/* Calculation Verification */}
+          <div className="space-y-4">
+            <h4 className="font-medium flex items-center gap-2">
+              <Calculator className="h-4 w-4" />
+              Calculation Verification
+            </h4>
+            <CalculationVerificationIndicator 
+              bar={bar} 
+              config={config}
+              showDetails={true}
+            />
+          </div>
+
           {/* Code Profile Info */}
-          <div className="bg-muted/30 p-3 rounded-lg text-sm">
-            <div className="font-medium mb-1">Code Profile Parameters</div>
-            <div className="grid grid-cols-2 gap-2 text-muted-foreground">
-              <div>Standard: {config.codeStandard}</div>
-              <div>Hook Multiplier: {config.defaultHookMultiplier}d</div>
-              <div>90° Deduction: {config.bendDeductions.deg90}d</div>
-              <div>135° Deduction: {config.bendDeductions.deg135}d</div>
+          <div className="bg-muted/30 p-4 rounded-lg">
+            <div className="font-medium mb-3 flex items-center gap-2">
+              <Badge variant="outline">{config.codeStandard}</Badge>
+              Code Profile Parameters
             </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2">
+                <div className="font-medium text-muted-foreground">Bend Deductions</div>
+                <div className="space-y-1 pl-2">
+                  <div>45° bends: <span className="font-mono">{config.bendDeductions.deg45}d</span></div>
+                  <div>90° bends: <span className="font-mono">{config.bendDeductions.deg90}d</span></div>
+                  <div>135° bends: <span className="font-mono">{config.bendDeductions.deg135}d</span></div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="font-medium text-muted-foreground">Hook Parameters</div>
+                <div className="space-y-1 pl-2">
+                  <div>Hook multiplier: <span className="font-mono">{config.defaultHookMultiplier}d</span></div>
+                  <div>For {bar.diameter}mm bar: <span className="font-mono">{config.defaultHookMultiplier * bar.diameter}mm</span></div>
+                </div>
+              </div>
+            </div>
+            {config.codeProfileId && (
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                Active Profile: {config.codeProfileId}
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
