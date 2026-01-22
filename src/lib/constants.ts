@@ -98,6 +98,85 @@ export const DEFAULT_PROJECT_CONFIG: ProjectConfig = {
     deg90: 2,
     deg135: 3,
   },
+  calculationMode: 'MANUAL',
+  components: [],
   createdAt: new Date(),
   updatedAt: new Date(),
 };
+
+// ============================================================================
+// COMPONENT BASED METHODOLOGY CONSTANTS
+// ============================================================================
+
+// Development length table (Ld) per diameter for M30 concrete
+// TODO: Expand for other grades based on standard formulas
+export const DEVELOPMENT_LENGTH_M30: Record<number, number> = {
+  8: 400,
+  10: 500,
+  12: 699,
+  14: 798,
+  16: 998,
+  20: 1247,
+  25: 1995,
+  32: 2555,
+};
+
+// Weight per meter for each diameter (kg/m)
+// Formula: D² / 162
+export const WEIGHT_PER_METER: Record<number, number> = {
+  6: 0.222,
+  8: 0.395,
+  10: 0.617,
+  12: 0.889,
+  14: 1.21,
+  16: 1.58,
+  20: 2.47,
+  25: 3.85,
+  32: 6.31,
+};
+
+// Default covers by component type (IS code)
+export const COMPONENT_COVERS: Record<string, number> = {
+  SLAB: 20,
+  BEAM: 25,
+  COLUMN: 40,
+  FOOTING: 50,
+};
+
+// Bar types/Descriptions for each component
+export const BAR_TYPES = {
+  SLAB: [
+    'Bottom Bar (X-X)',
+    'Bottom Bar Dist (X)',
+    'Bottom Bar (Y-Y)', 
+    'Bottom Bar Dist (Y)',
+    'Top Bar (X-X)',
+    'Top Bar Dist (X)',
+    'Top Bar (Y-Y)',
+    'Top Bar Dist (Y)',
+    'Extra Top',
+    'Extra Bottom',
+  ],
+  BEAM: [
+    'Top Bar',
+    'Bottom Bar',
+    'Side Face Bar',
+    'Stirrups',
+    'Extra Bar',
+  ],
+  COLUMN: [
+    'Main Bar',
+    'Tie',
+    'Master Tie',
+  ],
+  FOOTING: [
+    'Bottom Main (L)',
+    'Bottom Dist (B)',
+    'Top Main (L)', 
+    'Top Dist (B)',
+    'Dowel Bars',
+  ]
+};
+
+// Footing types (pile variants only for footings)
+export const FOOTING_TYPES = ['ISOLATED', 'COMBINED', 'PILE_CYLINDER', 'PILE_CUBOID'];

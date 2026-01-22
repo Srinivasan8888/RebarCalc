@@ -13,6 +13,9 @@ import { saveToLocalStorage } from '@/lib/local-storage';
 import { Settings, Download, Save, AlertCircle, RefreshCw } from 'lucide-react';
 import type { ProjectConfig, BarEntry, CalculatedBar } from '@/types';
 import { codeProfileService } from '@/services/code-profile-service';
+import { MethodologyToggle } from './MethodologyToggle';
+import { BBSSpreadsheetView } from './BBSSpreadsheetView';
+import type { ConcreteComponent, BBSMetadata } from '@/types/component-types';
 
 interface ProjectDetailPageProps {
   projectId: string;
@@ -128,6 +131,24 @@ export function ProjectDetailPage({
     onBarsUpdate(newAllBars);
   };
 
+  const handleModeChange = (mode: 'MANUAL' | 'COMPONENT') => {
+    const updatedConfig = { ...config, calculationMode: mode };
+    setConfig(updatedConfig);
+    onConfigUpdate(updatedConfig);
+  };
+
+  const handleComponentsChange = (components: ConcreteComponent[]) => {
+    const updatedConfig = { ...config, components };
+    setConfig(updatedConfig);
+    onConfigUpdate(updatedConfig);
+  };
+
+  const handleMetadataChange = (metadata: BBSMetadata) => {
+    const updatedConfig = { ...config, bbsMetadata: metadata };
+    setConfig(updatedConfig);
+    onConfigUpdate(updatedConfig);
+  };
+
   const getSaveStatusIcon = () => {
     switch (saveStatus) {
       case 'saving':
@@ -233,7 +254,23 @@ export function ProjectDetailPage({
         </div>
       </div>
 
-      {/* Main Content Tabs */}
+
+
+      {/* Methodology Toggle */}
+      <MethodologyToggle 
+        mode={config.calculationMode || 'MANUAL'} 
+        onModeChange={handleModeChange} 
+      />
+
+      {config.calculationMode === 'COMPONENT' ? (
+        <BBSSpreadsheetView 
+          components={config.components || []}
+          metadata={config.bbsMetadata}
+          onComponentsChange={handleComponentsChange}
+          onMetadataChange={handleMetadataChange}
+        />
+      ) : (
+      /* Main Content Tabs (Manual Mode) */
       <Tabs defaultValue="bars" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="bars">Bar Entry</TabsTrigger>
@@ -281,6 +318,7 @@ export function ProjectDetailPage({
           </div>
         </TabsContent>
       </Tabs>
+      )}
     </div>
   );
 }

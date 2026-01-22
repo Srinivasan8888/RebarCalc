@@ -1,4 +1,6 @@
 // Core type definitions for RebarCalc BBS Calculator
+export * from './component-types';
+import type { ConcreteComponent, BBSMetadata } from './component-types';
 
 // Bend deductions configuration
 export interface BendDeductions {
@@ -16,6 +18,14 @@ export interface ProjectConfig {
   defaultCover: number;           // mm
   defaultHookMultiplier: number;  // typically 9
   bendDeductions: BendDeductions;
+  
+  // Methodology settings
+  calculationMode: 'MANUAL' | 'COMPONENT';
+  
+  // Component-based data
+  components?: ConcreteComponent[];
+  bbsMetadata?: BBSMetadata;
+  
   createdAt: Date;
   updatedAt: Date;
 }
