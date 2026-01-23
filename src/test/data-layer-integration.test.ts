@@ -32,7 +32,7 @@ describe('Data Layer Integration', () => {
       deg90: 2,
       deg135: 3
     },
-    createdAt: new Date('2024-01-01T10:00:00Z'),
+    calculationMode: 'COMPONENT', createdAt: new Date('2024-01-01T10:00:00Z'),
     updatedAt: new Date('2024-01-02T15:30:00Z')
   };
 

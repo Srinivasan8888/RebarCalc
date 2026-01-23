@@ -35,6 +35,7 @@ const arbProjectConfig: fc.Arbitrary<ProjectConfig> = fc.record({
     deg90: arbBendMultiplier,
     deg135: arbBendMultiplier,
   }),
+  calculationMode: fc.constant('COMPONENT' as const),
   createdAt: fc.date(),
   updatedAt: fc.date(),
 });
@@ -302,7 +303,7 @@ describe('Code Profile Service - Unit Tests', () => {
       defaultCover: 20,
       defaultHookMultiplier: 8,
       bendDeductions: { deg45: 0.5, deg90: 1.5, deg135: 2.5 },
-      createdAt: new Date(),
+      calculationMode: 'COMPONENT', createdAt: new Date(),
       updatedAt: new Date(),
     };
 
@@ -323,7 +324,7 @@ describe('Code Profile Service - Unit Tests', () => {
       defaultCover: 25,
       defaultHookMultiplier: 9,
       bendDeductions: { deg45: 1, deg90: 2, deg135: 3 },
-      createdAt: new Date(),
+      calculationMode: 'COMPONENT', createdAt: new Date(),
       updatedAt: new Date(),
     };
 

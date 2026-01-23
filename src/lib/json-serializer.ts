@@ -20,6 +20,7 @@ interface SerializedProjectConfig {
     deg90: number;
     deg135: number;
   };
+  calculationMode?: 'MANUAL' | 'COMPONENT';
   createdAt: string;  // ISO date string
   updatedAt: string;  // ISO date string
 }
@@ -49,6 +50,7 @@ export function serializeProject(config: ProjectConfig, bars: BarEntry[]): Seria
 export function deserializeProject(serialized: SerializedProject): { config: ProjectConfig; bars: BarEntry[] } {
   const config: ProjectConfig = {
     ...serialized.config,
+    calculationMode: serialized.config.calculationMode || 'COMPONENT',
     createdAt: new Date(serialized.config.createdAt),
     updatedAt: new Date(serialized.config.updatedAt)
   };

@@ -11,6 +11,26 @@ type AppView = 'dashboard' | 'projects' | 'project-detail';
 
 function App() {
   const [currentView, setCurrentView] = useState<AppView>('dashboard');
+  
+  // Initialize System Theme
+  useState(() => {
+    // Check system preference
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const applyTheme = (isDark: boolean) => {
+      document.documentElement.classList.toggle('dark', isDark);
+    };
+
+    // Apply initially
+    applyTheme(mediaQuery.matches);
+
+    // Listen for changes
+    const handler = (e: MediaQueryListEvent) => applyTheme(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    
+    return () => mediaQuery.removeEventListener('change', handler);
+  });
+
   const [currentProject, setCurrentProject] = useState<{
     id: string;
     config: ProjectConfig;

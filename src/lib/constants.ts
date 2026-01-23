@@ -108,18 +108,44 @@ export const DEFAULT_PROJECT_CONFIG: ProjectConfig = {
 // COMPONENT BASED METHODOLOGY CONSTANTS
 // ============================================================================
 
-// Development length table (Ld) per diameter for M30 concrete
-// TODO: Expand for other grades based on standard formulas
-export const DEVELOPMENT_LENGTH_M30: Record<number, number> = {
-  8: 400,
-  10: 500,
-  12: 699,
-  14: 798,
-  16: 998,
-  20: 1247,
-  25: 1995,
-  32: 2555,
+// Development length factors (approx Ld/D) based on IS 456
+const LD_FACTORS = {
+  M20: 57,
+  M25: 50, // Standard 49, rounded to 50
+  M30: 50, // Excel uses ~50D (e.g. 12mm -> 599)
+  M35: 41,
+  M40: 36, 
 };
+
+// Generate table helper
+const generateLdTable = (factor: number) => {
+  const table: Record<number, number> = {};
+  VALID_DIAMETERS.forEach(d => {
+    table[d] = Math.ceil(d * factor);
+  });
+  return table;
+};
+
+export const DEVELOPMENT_LENGTH_TABLES = {
+  M20: generateLdTable(LD_FACTORS.M20),
+  M25: generateLdTable(LD_FACTORS.M25),
+  M30: { // Specific values from Excel reference where available
+    8: 400,
+    10: 500,
+    12: 599, // Excel value
+    16: 798, // Excel value
+    20: 998, // Excel value
+    25: 1247, // Excel value
+    32: 1995, // Excel calc
+    6: 300 // inferred
+  }, // Fallback to factor if not listed
+  M35: generateLdTable(LD_FACTORS.M35),
+  M40: generateLdTable(LD_FACTORS.M40),
+};
+
+// Development length table (Ld) per diameter for M30 concrete
+// Maintained for backward compatibility
+export const DEVELOPMENT_LENGTH_M30 = DEVELOPMENT_LENGTH_TABLES.M30;
 
 // Weight per meter for each diameter (kg/m)
 // Formula: D² / 162
@@ -146,16 +172,35 @@ export const COMPONENT_COVERS: Record<string, number> = {
 // Bar types/Descriptions for each component
 export const BAR_TYPES = {
   SLAB: [
+    // Bottom Main Bars
     'Bottom Bar (X-X)',
-    'Bottom Bar Dist (X)',
-    'Bottom Bar (Y-Y)', 
-    'Bottom Bar Dist (Y)',
+    'Bottom Bar (Y-Y)',
+    'Bottom Bar (X-X) Full Span',
+    'Bottom Bar (Y-Y) Full Span',
+    // Bottom Distribution Bars
+    'Bottom Bar Dist (X-X)',
+    'Bottom Bar Dist (Y-Y)',
+    // Top Main Bars
     'Top Bar (X-X)',
-    'Top Bar Dist (X)',
     'Top Bar (Y-Y)',
-    'Top Bar Dist (Y)',
+    'Top Bar (X-X) Full Span',
+    'Top Bar (Y-Y) Full Span',
+    'Top Main Bar (X-X)',
+    'Top Main Bar (Y-Y)',
+    // Top Distribution Bars
+    'Top Dist Bar (X-X)',
+    'Top Dist Bar (Y-Y)',
+    'Top Bar Dist (X-X)',
+    'Top Bar Dist (Y-Y)',
+    // Combined Bars
+    'Bottom & Top Bar (X-X)',
+    'Bottom & Top Bar (Y-Y)',
+    'Top & Bottom Bar (X-X)',
+    'Top & Bottom Bar (Y-Y)',
+    // Special Bars
     'Extra Top',
     'Extra Bottom',
+    'Chair Bar',
   ],
   BEAM: [
     'Top Bar',

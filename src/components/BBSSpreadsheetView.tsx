@@ -13,18 +13,25 @@ import type {
   BarMeasurements
 } from '@/types/component-types';
 import { 
-  DEVELOPMENT_LENGTH_M30, 
+  DEVELOPMENT_LENGTH_TABLES,
   COMPONENT_COVERS, 
   BAR_TYPES,
   FOOTING_TYPES
 } from '@/lib/constants';
+
+// ... (existing imports)
+
+
 import { 
-  calculateComponentBarEntry, 
+  calculateComponentBarEntryEnhanced, 
   calculateProjectTotal, 
-  calculateSlabUBarMeasurements,
-  calculateSlabDistributionMeasurements 
-} from '@/lib/component-calculator';
+  calculateBarMeasurementsAuto,
+  calculateBarsPerMember,
+  calculateCutLengthByBarType
+} from '@/lib/enhanced-calculator';
 import { TotalSteelWeight } from './TotalSteelWeight';
+import { CalculationVerificationBadge } from './CalculationVerificationBadge';
+import { ComponentFormulaTooltip } from './ComponentFormulaTooltip';
 
 interface BBSSpreadsheetViewProps {
   components: ConcreteComponent[];
@@ -88,21 +95,31 @@ export function BBSSpreadsheetView({
     const component = components.find(c => c.id === componentId);
     if (!component) return;
 
-    // Auto-calculate measurements if Slab U-Bar logic applies
-    let initialMeasurements: BarMeasurements = { a: component.spanX + (50 * 2) };
+    // Auto-calculate measurements using enhanced calculator
+    let initialMeasurements: BarMeasurements = { a: component.spanX };
+    
+    // Determine default direction based on bar type
+    const defaultBarType = BAR_TYPES[component.componentType]?.[0] || 'Main Bar';
+    const defaultDirection: BarDirection = defaultBarType.includes('(Y-Y)') ? 'Y' : 'X';
     
     if (component.componentType === 'SLAB' && component.beamWidths && component.topExtensions) {
-       // Should default to X or Y depending on bar count? Or just X.
-       // Default new bar to X-Dir for now
-       initialMeasurements = calculateSlabUBarMeasurements('X', component);
+       // Use enhanced calculator for auto-measurements
+       initialMeasurements = calculateBarMeasurementsAuto(
+         defaultBarType,
+         defaultDirection,
+         component,
+         8, // Default diameter
+         metadata?.concreteGrade || 'M30'
+       );
     }
 
     const newBar: ComponentBarEntry = {
       id: crypto.randomUUID(),
-      barType: BAR_TYPES[component.componentType]?.[0] || 'Main Bar',
-      direction: 'X',
+      barType: defaultBarType,
+      direction: defaultDirection,
       diameter: 8,
       spacing: 150,
+      barsPerMember: 1,
       measurements: initialMeasurements
     };
 
@@ -123,26 +140,33 @@ export function BBSSpreadsheetView({
     // Find target bar to check its type
     const targetBar = component?.bars.find(b => b.id === barId);
     
-    // If direction changed and it's a Slab U-Bar/Dist Bar, auto-recalculate dimensions
-    if (updates.direction && 
-        (updates.direction === 'X' || updates.direction === 'Y') && 
+    // Auto-set direction based on bar type
+    if (updates.barType) {
+      if (updates.barType.includes('(Y-Y)')) {
+        finalUpdates.direction = 'Y';
+      } else if (updates.barType.includes('(X-X)')) {
+        finalUpdates.direction = 'X';
+      }
+    }
+    
+    // If direction or bar type changed, auto-recalculate measurements using enhanced calculator
+    if ((updates.direction || updates.barType) && 
         component?.componentType === 'SLAB' && 
         component.beamWidths && 
         component.topExtensions &&
         targetBar
     ) {
-       const isDistBar = targetBar.barType.toLowerCase().includes('dist');
-       let newMeasurements;
+       const newDirection = finalUpdates.direction || targetBar.direction;
+       const newBarType = updates.barType || targetBar.barType;
+       const diameter = updates.diameter || targetBar.diameter;
        
-       if (isDistBar) {
-          // Use newly created Distribution Bar logic 
-          // (Need diameter, use update or existing)
-          const diameter = updates.diameter || targetBar.diameter;
-          newMeasurements = calculateSlabDistributionMeasurements(updates.direction, component, diameter);
-       } else {
-          // Use Main U-Bar logic
-          newMeasurements = calculateSlabUBarMeasurements(updates.direction, component);
-       }
+       const newMeasurements = calculateBarMeasurementsAuto(
+         newBarType,
+         newDirection,
+         component,
+         diameter,
+         metadata?.concreteGrade || 'M30'
+       );
        
        finalUpdates = { ...finalUpdates, measurements: newMeasurements };
     }
@@ -192,22 +216,12 @@ export function BBSSpreadsheetView({
   const recalculateAll = (comps: ConcreteComponent[]) => {
     const calculated = comps.map(comp => {
       const bars = comp.bars.map(bar => {
-        // Determine relevant span for auto-calculation
-        // If bar is along X (Main), distribution is along Y. 
-        // Number of bars = Length of perpendicular span / spacing
-        let relevantSpan = 0;
-        if (bar.direction === 'X') relevantSpan = comp.spanY; // Spread along Y
-        else if (bar.direction === 'Y') relevantSpan = comp.spanX; // Spread along X
-        else relevantSpan = Math.max(comp.spanX, comp.spanY); // Default ?
-
         return {
           ...bar,
-          calculated: calculateComponentBarEntry(
+          calculated: calculateComponentBarEntryEnhanced(
             bar, 
-            relevantSpan, 
-            comp.cover,
-            // isUBar flag: Only for SLAB Main bars (exclude Distribution bars)
-            comp.componentType === 'SLAB' && !bar.barType.toLowerCase().includes('dist')
+            comp,
+            metadata?.concreteGrade || 'M30'
           )
         };
       });
@@ -295,7 +309,8 @@ export function BBSSpreadsheetView({
                 <span>(Development Length Reference)</span>
               </div>
               <div className="flex justify-between gap-2 overflow-x-auto">
-                {Object.entries(DEVELOPMENT_LENGTH_M30).map(([dia, val]) => (
+                {Object.entries(DEVELOPMENT_LENGTH_TABLES[metadata.concreteGrade as keyof typeof DEVELOPMENT_LENGTH_TABLES] || DEVELOPMENT_LENGTH_TABLES.M30)
+                  .map(([dia, val]) => (
                    <div key={dia} className="flex flex-col items-center min-w-[30px]">
                      <span className="font-bold">{dia}</span>
                      <span>{val}</span>
@@ -309,7 +324,7 @@ export function BBSSpreadsheetView({
 
       {/* 2. Main Spreadsheet Table */}
       <div className="border rounded-md overflow-x-auto bg-background">
-        <Table className="w-full min-w-[1200px]">
+        <Table className="w-full min-w-[1800px]">
           <TableHeader>
              <TableRow className="bg-muted/50 hover:bg-muted/50">
                <TableHead className="w-[50px]">S.No</TableHead>
@@ -317,19 +332,31 @@ export function BBSSpreadsheetView({
                <TableHead className="w-[120px] text-center">Span (X/Y)</TableHead>
                <TableHead className="w-[80px] text-center">Spc (mm)</TableHead>
                <TableHead className="w-[60px] text-center">Dia</TableHead>
-               <TableHead className="w-[400px] text-center border-l border-r">
-                  Measurements of Bar (mm)
-                  <div className="grid grid-cols-7 text-xs font-normal mt-1 text-muted-foreground">
-                    <span>a</span>
-                    <span>b</span>
-                    <span>c</span>
-                    <span>d</span>
-                    <span>e</span>
-                    <span>f</span>
-                    <span>Lap</span>
-                  </div>
+               <TableHead className="w-[80px] text-center">No. of bars Reqd per member</TableHead>
+               <TableHead className="w-[80px] text-center">Total no. of members Reqd</TableHead>
+               <TableHead className="w-[80px] text-center">Total nos.</TableHead>
+               <TableHead className="w-[500px] text-center border-l border-r">
+                  <ComponentFormulaTooltip bar={{ barType: 'Bottom Bar (X-X)', direction: 'X', diameter: 8, spacing: 150, measurements: { a: 0 } } as any}>
+                    <div className="cursor-help">
+                      Measurements of Bar (mm)
+                      <div className="grid grid-cols-10 text-xs font-normal mt-1 text-muted-foreground">
+                        <span>a</span>
+                        <span>b</span>
+                        <span>c</span>
+                        <span>d</span>
+                        <span>e</span>
+                        <span>f</span>
+                        <span>Lap</span>
+                        <span>Total</span>
+                        <span>Bends</span>
+                        <span>Deduction</span>
+                      </div>
+                    </div>
+                  </ComponentFormulaTooltip>
                </TableHead>
-               <TableHead className="w-[200px] text-center">Calculations</TableHead>
+               <TableHead className="w-[80px] text-center">Cut Length</TableHead>
+               <TableHead className="w-[80px] text-center">Total Length (m)</TableHead>
+               <TableHead className="w-[60px] text-center">Bends</TableHead>
                <TableHead className="w-[50px]"></TableHead>
              </TableRow>
           </TableHeader>
@@ -339,7 +366,7 @@ export function BBSSpreadsheetView({
                 {/* Component Header Row */}
                 <TableRow className="bg-muted/20 pointer-events-none group">
                    <TableCell className="font-bold text-center align-top pt-4">{cIndex + 1}</TableCell>
-                   <TableCell className="align-top pt-4 pointer-events-auto" colSpan={8}>
+                   <TableCell className="align-top pt-4 pointer-events-auto" colSpan={11}>
                      <div className="flex flex-col gap-4 mb-4">
                        <div className="flex items-center gap-2">
                          <Select 
@@ -595,44 +622,200 @@ export function BBSSpreadsheetView({
                        </Select>
                     </TableCell>
                     
-                    {/* Measurements Inputs a-f + lap */}
+                    {/* No. of bars Reqd per member (input field, default 1) */}
+                    <TableCell>
+                       <Input 
+                         type="number" 
+                         value={bar.barsPerMember || 1} 
+                         onChange={e => updateBarEntry(component.id, bar.id, { barsPerMember: parseInt(e.target.value) || 1 })}
+                         className="h-8 text-center border-0 bg-transparent hover:bg-muted/50"
+                         placeholder="1"
+                       />
+                    </TableCell>
+                    
+                    {/* Total no. of members Reqd (calculated based on bar type) */}
+                    <TableCell className="text-center">
+                       {(() => {
+                         const totalMembers = calculateBarsPerMember(bar.barType, bar.direction, component, bar.spacing);
+                         return (
+                           <span 
+                             className="font-mono text-primary font-medium cursor-help hover:bg-muted/20 px-1 py-0.5 rounded"
+                             title={`Total Members Calculation:
+Bar Type: ${bar.barType}
+${bar.barType.toLowerCase().includes('bottom bar (x-x)') ? `Formula: ROUNDUP(Span Y / Spacing, 0)
+Span Y: ${component.spanY}mm
+Spacing: ${bar.spacing}mm
+Result: ROUNDUP(${component.spanY} / ${bar.spacing}) = ${totalMembers}` :
+bar.barType.toLowerCase().includes('bottom bar dist (x-x)') ? `Formula: ROUNDUP((Top Ext Left + Top Ext Right) / Spacing, 0)
+Top Ext Left: ${component.topExtensions?.left || 0}mm
+Top Ext Right: ${component.topExtensions?.right || 0}mm
+Spacing: ${bar.spacing}mm
+Result: ROUNDUP((${component.topExtensions?.left || 0} + ${component.topExtensions?.right || 0}) / ${bar.spacing}) = ${totalMembers}` :
+bar.barType.toLowerCase().includes('bottom bar (y-y)') ? `Formula: ROUNDUP(Span X / Spacing, 0)
+Span X: ${component.spanX}mm
+Spacing: ${bar.spacing}mm
+Result: ROUNDUP(${component.spanX} / ${bar.spacing}) = ${totalMembers}` :
+bar.barType.toLowerCase().includes('bottom bar dist (y-y)') ? `Formula: ROUNDUP((Top Ext Top + Top Ext Bottom) / Spacing, 0)
+Top Ext Top: ${component.topExtensions?.top || 0}mm
+Top Ext Bottom: ${component.topExtensions?.bottom || 0}mm
+Spacing: ${bar.spacing}mm
+Result: ROUNDUP((${component.topExtensions?.top || 0} + ${component.topExtensions?.bottom || 0}) / ${bar.spacing}) = ${totalMembers}` :
+`Formula: Based on bar type and direction
+Result: ${totalMembers}`}`}
+                           >
+                             {totalMembers}
+                           </span>
+                         );
+                       })()}
+                    </TableCell>
+                    
+                    {/* Total nos. (barsPerMember × calculated totalMembers) */}
+                    <TableCell className="text-center">
+                       {(() => {
+                         const totalMembers = calculateBarsPerMember(bar.barType, bar.direction, component, bar.spacing);
+                         const totalNos = (bar.barsPerMember || 1) * totalMembers;
+                         return (
+                           <span 
+                             className="font-mono font-bold text-primary cursor-help hover:bg-muted/20 px-1 py-0.5 rounded"
+                             title={`Total Nos Calculation:
+Formula: Bars per Member × Total Members
+Bars per Member: ${bar.barsPerMember || 1}
+Total Members: ${totalMembers}
+Result: ${bar.barsPerMember || 1} × ${totalMembers} = ${totalNos}`}
+                           >
+                             {totalNos}
+                           </span>
+                         );
+                       })()}
+                    </TableCell>
+                    
+                    {/* Measurements Inputs a-f + lap + calculated fields */}
                     <TableCell className="border-l border-r p-0">
-                       <div className="grid grid-cols-7 h-full">
+                       <div className="grid grid-cols-10 h-full">
+                         {/* Input fields: a, b, c, d, e, f, lap */}
                          {['a','b','c','d','e','f','lap'].map((key) => (
                            <input
                              key={key}
                              type="number"
                              placeholder="-"
-                             className="w-full h-full min-h-[40px] text-center border-r last:border-r-0 bg-transparent focus:bg-background focus:outline-none focus:ring-1 focus:ring-inset text-xs"
+                             className="w-full h-full min-h-[40px] text-center border-r bg-transparent focus:bg-background focus:outline-none focus:ring-1 focus:ring-inset text-xs"
                              value={bar.measurements[key as keyof BarMeasurements] || ''}
                              onChange={e => updateBarMeasurements(component.id, bar.id, key as keyof BarMeasurements, parseFloat(e.target.value) || 0)}
                            />
                          ))}
+                         
+                         {/* Calculated field: Total (a+b+c+d+e+f, excluding lap) */}
+                         <div 
+                           className="w-full h-full min-h-[40px] flex items-center justify-center border-r bg-muted/20 text-xs font-mono font-medium text-primary cursor-help hover:bg-muted/30"
+                           title={`Total Measurement:
+Formula: a + b + c + d + e + f (excludes lap)
+a: ${bar.measurements.a || 0}mm
+b: ${bar.measurements.b || 0}mm
+c: ${bar.measurements.c || 0}mm
+d: ${bar.measurements.d || 0}mm
+e: ${bar.measurements.e || 0}mm
+f: ${bar.measurements.f || 0}mm
+Total: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0) + (bar.measurements.f || 0)}mm`}
+                         >
+                           {(() => {
+                             const total = (bar.measurements.a || 0) + (bar.measurements.b || 0) + 
+                                          (bar.measurements.c || 0) + (bar.measurements.d || 0) + 
+                                          (bar.measurements.e || 0) + (bar.measurements.f || 0);
+                             return total > 0 ? total : '-';
+                           })()}
+                         </div>
+                         
+                         {/* Calculated field: No of Bends */}
+                         <div 
+                           className="w-full h-full min-h-[40px] flex items-center justify-center border-r bg-muted/20 text-xs font-mono font-medium text-primary cursor-help hover:bg-muted/30"
+                           title={`Number of Bends:
+Bar Type: ${bar.barType}
+Auto-detected: ${bar.calculated ? bar.calculated.noOfDeductions : 0} bends
+Based on bar shape and segments`}
+                         >
+                           {bar.calculated ? bar.calculated.noOfDeductions : '-'}
+                         </div>
+                         
+                         {/* Calculated field: Deduction (No of Bends * Dia * 2) */}
+                         <div 
+                           className="w-full h-full min-h-[40px] flex items-center justify-center bg-muted/20 text-xs font-mono font-medium text-primary cursor-help hover:bg-muted/30"
+                           title={`Deduction Calculation:
+Formula: No of Bends × Diameter × 2
+No of Bends: ${bar.calculated ? bar.calculated.noOfDeductions : 0}
+Diameter: ${bar.diameter}mm
+Result: ${bar.calculated ? bar.calculated.noOfDeductions : 0} × ${bar.diameter} × 2 = ${bar.calculated ? bar.calculated.deductionAmount : 0}mm`}
+                         >
+                           {bar.calculated ? bar.calculated.deductionAmount : '-'}
+                         </div>
                        </div>
                     </TableCell>
                     
-                    {/* Calculations Display */}
-                    <TableCell>
-                      {bar.calculated && (
-                        <div className="text-xs space-y-1">
-                           <div className="flex justify-between">
-                             <span className="text-muted-foreground">Cut Len:</span>
-                             <span className="font-mono font-medium">{Math.round(bar.calculated.cuttingLength)}</span>
-                           </div>
-                           <div className="flex justify-between">
-                             <span className="text-muted-foreground">Qty:</span>
-                             <span className="font-mono font-bold bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded">
-                               {bar.calculated.noOfBars}
-                             </span>
-                           </div>
-                           <div className="flex justify-between border-t pt-1 mt-1">
-                             <span className="font-semibold">Total:</span>
-                             <span className="font-mono">{(bar.calculated.totalLength).toFixed(2)}m</span>
-                           </div>
-                        </div>
-                      )}
+                    {/* Cut Length (Bar type specific formula) */}
+                    <TableCell className="text-center">
+                      {(() => {
+                        const deduction = bar.calculated ? bar.calculated.deductionAmount : 0;
+                        const cutLength = calculateCutLengthByBarType(bar.barType, bar.measurements, deduction);
+                        
+                        return cutLength > 0 ? (
+                          <span 
+                            className="font-mono font-medium cursor-help hover:bg-muted/20 px-1 py-0.5 rounded"
+                            title={bar.barType.toLowerCase().includes('bottom bar (y-y)') 
+                              ? `Cut Length Calculation (Special Formula):
+Bar Type: ${bar.barType}
+Formula: CEILING((a+b+c+d+e+deduction) / 5) × 5
+a+b+c+d+e: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0)}mm (excludes f)
+Deduction: ${deduction}mm (added, not subtracted)
+Before rounding: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0) + deduction}mm
+Result: ${cutLength}mm (rounded up to 5mm)`
+                              : `Cut Length Calculation (Standard Formula):
+Bar Type: ${bar.barType}
+Formula: Total - Deduction
+Total: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0) + (bar.measurements.f || 0)}mm
+Deduction: ${deduction}mm
+Result: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0) + (bar.measurements.f || 0)} - ${deduction} = ${cutLength}mm`}
+                          >
+                            {cutLength}mm
+                          </span>
+                        ) : '-';
+                      })()}
                     </TableCell>
                     
+                    {/* Total Length (Cut Length × Total nos / 1000) */}
+                    <TableCell className="text-center">
+                      {(() => {
+                        const deduction = bar.calculated ? bar.calculated.deductionAmount : 0;
+                        const cutLength = calculateCutLengthByBarType(bar.barType, bar.measurements, deduction);
+                        const totalMembers = calculateBarsPerMember(bar.barType, bar.direction, component, bar.spacing);
+                        const totalNos = (bar.barsPerMember || 1) * totalMembers;
+                        const totalLength = (cutLength * totalNos) / 1000;
+                        
+                        return totalLength > 0 ? (
+                          <span 
+                            className="font-mono font-medium cursor-help hover:bg-muted/20 px-1 py-0.5 rounded"
+                            title={`Total Length Calculation:
+Formula: (Cut Length × Total Nos) / 1000
+Cut Length: ${cutLength}mm
+Total Nos: ${totalNos}
+Result: (${cutLength} × ${totalNos}) / 1000 = ${totalLength.toFixed(2)}m`}
+                          >
+                            {totalLength.toFixed(2)}m
+                          </span>
+                        ) : '-';
+                      })()}
+                    </TableCell>
+                    
+                    {/* Bends Input (with auto-calculation) */}
+                    <TableCell>
+                       <Input 
+                         type="number"
+                         min="0"
+                         className="h-8 w-full text-center border-0 bg-transparent hover:bg-muted/50 p-0"
+                         value={bar.manualNoOfDeductions || (bar.calculated ? bar.calculated.noOfDeductions : '')}
+                         onChange={e => updateBarEntry(component.id, bar.id, { manualNoOfDeductions: parseInt(e.target.value) || 0 })}
+                         placeholder={bar.calculated ? bar.calculated.noOfDeductions.toString() : "Auto"}
+                       />
+                    </TableCell>
+
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeBarEntry(component.id, bar.id)}>
                         <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
@@ -644,7 +827,7 @@ export function BBSSpreadsheetView({
                 {/* Add Bar Button Row */}
                 <TableRow className="border-b-4 border-double">
                    <TableCell></TableCell>
-                   <TableCell colSpan={8}>
+                   <TableCell colSpan={11}>
                      <Button 
                        variant="ghost" 
                        size="sm" 

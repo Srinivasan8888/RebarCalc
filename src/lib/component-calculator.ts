@@ -27,8 +27,9 @@ export function calculateNumberOfBars(
   if (spacing <= 0) return 0;
   
   const effectiveSpan = Math.max(0, span - (2 * cover));
-  // Standard formula: (Effective Span / Spacing) + 1
-  return Math.floor(effectiveSpan / spacing) + 1;
+  // Standard formula: ROUNDUP(Effective Span / Spacing) + 1
+  // Using Math.ceil to match Excel's ROUNDUP behavior
+  return Math.ceil(effectiveSpan / spacing) + 1;
 }
 
 /**
@@ -121,7 +122,10 @@ export function calculateComponentBarEntry(
   const deductionAmount = calculateDeductionAmount(noOfDeductions, entry.diameter);
   
   // 4. Cutting Length
-  const cuttingLength = totalMeasurement - deductionAmount;
+  // Apply CEILING to nearest 5mm rounding as per BBS standards found in Excel
+  // Excel Formula: =CEILING(Total - Deduction, 5)
+  let cuttingLength = totalMeasurement - deductionAmount;
+  cuttingLength = Math.ceil(cuttingLength / 5) * 5;
   
   // 5. Total Length (m)
   const totalLength = (cuttingLength * noOfBars) / 1000;

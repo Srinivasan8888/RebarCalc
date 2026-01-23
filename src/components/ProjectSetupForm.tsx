@@ -112,6 +112,7 @@ export function ProjectSetupForm({
       defaultCover: formData.defaultCover,
       defaultHookMultiplier: formData.defaultHookMultiplier,
       bendDeductions: formData.bendDeductions,
+      calculationMode: 'COMPONENT',
     });
   };
 

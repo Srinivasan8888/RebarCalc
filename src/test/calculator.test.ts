@@ -55,6 +55,7 @@ const arbProjectConfig: fc.Arbitrary<ProjectConfig> = fc.record({
     deg90: arbBendMultiplier,
     deg135: arbBendMultiplier,
   }),
+  calculationMode: fc.constant('COMPONENT' as const),
   createdAt: fc.date(),
   updatedAt: fc.date(),
 });
@@ -467,7 +468,7 @@ describe('Unit Tests - Known Values', () => {
       deg90: 2,
       deg135: 3,
     },
-    createdAt: new Date(),
+    calculationMode: 'COMPONENT', createdAt: new Date(),
     updatedAt: new Date(),
   };
 

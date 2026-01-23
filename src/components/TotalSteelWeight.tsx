@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ProjectSteelSummary } from '@/types/component-types';
 import { Scale } from 'lucide-react';

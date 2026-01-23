@@ -24,7 +24,7 @@ const mockProject: ProjectConfig = {
     deg90: 2,
     deg135: 3,
   },
-  createdAt: new Date(),
+  calculationMode: 'COMPONENT', createdAt: new Date(),
   updatedAt: new Date(),
 };
 

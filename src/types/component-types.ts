@@ -96,6 +96,10 @@ export interface ComponentBarEntry {
   diameter: number;                // mm
   spacing: number;                 // mm (c/c)
   
+  // BBS Quantity fields
+  barsPerMember?: number;          // No. of bars required per member
+  totalMembers?: number;           // Total no. of members required
+  
   // Measurements (a, b, c, d, e, f, Lap as per BBS format)
   measurements: BarMeasurements;
   
