@@ -81,47 +81,146 @@ function calculateSlabBarMeasurements(
   // Normalize bar type for better matching
   const normalizedType = barType.toLowerCase();
   
-  // Bottom Main Bars (U-shaped bars)
-  if (normalizedType.includes('bottom bar (x-x)') || 
-      normalizedType.includes('bottom bar (y-y)') ||
-      normalizedType.includes('bottom bar') && !normalizedType.includes('dist')) {
+  // ============================================================================
+  // BOTTOM MAIN BARS
+  // ============================================================================
+  
+  // Bottom Bar (X-X) - U-shaped with extensions
+  if (normalizedType === 'bottom bar (x-x)') {
     return calculateTopBarWithExtensions(direction, component, diameter);
   }
   
-  // Bottom Main Bars (Full Span)
-  if (normalizedType.includes('full span')) {
+  // Bottom Bar (Y-Y) - U-shaped with extensions
+  if (normalizedType === 'bottom bar (y-y)') {
+    return calculateTopBarWithExtensions(direction, component, diameter);
+  }
+  
+  // Bottom Bar (X-X) Full Span - Straight bar full length
+  if (normalizedType === 'bottom bar (x-x) full span') {
     return calculateBottomBarFullSpan(direction, component, diameter, concreteGrade);
   }
   
-  // Top Main Bars
-  if (normalizedType.includes('top bar') || normalizedType.includes('top main bar')) {
-    return calculateTopBarWithExtensions(direction, component, diameter);
+  // Bottom Bar (Y-Y) Full Span - Straight bar full length
+  if (normalizedType === 'bottom bar (y-y) full span') {
+    return calculateBottomBarFullSpan(direction, component, diameter, concreteGrade);
   }
   
-  // Distribution Bars
-  if (normalizedType.includes('dist')) {
+  // ============================================================================
+  // BOTTOM DISTRIBUTION BARS
+  // ============================================================================
+  
+  // Bottom Bar Dist (X-X) - Distribution bars perpendicular to main
+  if (normalizedType === 'bottom bar dist (x-x)') {
     return calculateDistributionBar(direction, component, diameter);
   }
   
-  // Combined Bars (Bottom & Top)
-  if (barType.includes('bottom & top') || barType.includes('top & bottom')) {
+  // Bottom Bar Dist (Y-Y) - Distribution bars perpendicular to main
+  if (normalizedType === 'bottom bar dist (y-y)') {
+    return calculateDistributionBar(direction, component, diameter);
+  }
+  
+  // ============================================================================
+  // TOP MAIN BARS
+  // ============================================================================
+  
+  // Top Bar (X-X) - Top reinforcement with extensions
+  if (normalizedType === 'top bar (x-x)') {
+    return calculateTopBarWithExtensions(direction, component, diameter);
+  }
+  
+  // Top Bar (Y-Y) - Top reinforcement with extensions
+  if (normalizedType === 'top bar (y-y)') {
+    return calculateTopBarWithExtensions(direction, component, diameter);
+  }
+  
+  // Top Bar (X-X) Full Span - Full span top reinforcement
+  if (normalizedType === 'top bar (x-x) full span') {
+    return calculateTopBarFullSpan(direction, component, diameter, concreteGrade);
+  }
+  
+  // Top Bar (Y-Y) Full Span - Full span top reinforcement
+  if (normalizedType === 'top bar (y-y) full span') {
+    return calculateTopBarFullSpan(direction, component, diameter, concreteGrade);
+  }
+  
+  // Top Main Bar (X-X) - Alternative naming for top bars
+  if (normalizedType === 'top main bar (x-x)') {
+    return calculateTopBarWithExtensions(direction, component, diameter);
+  }
+  
+  // Top Main Bar (Y-Y) - Alternative naming for top bars
+  if (normalizedType === 'top main bar (y-y)') {
+    return calculateTopBarWithExtensions(direction, component, diameter);
+  }
+  
+  // ============================================================================
+  // TOP DISTRIBUTION BARS
+  // ============================================================================
+  
+  // Top Dist Bar (X-X) - Top distribution bars
+  if (normalizedType === 'top dist bar (x-x)') {
+    return calculateTopDistributionBar(direction, component, diameter);
+  }
+  
+  // Top Dist Bar (Y-Y) - Top distribution bars
+  if (normalizedType === 'top dist bar (y-y)') {
+    return calculateTopDistributionBar(direction, component, diameter);
+  }
+  
+  // Top Bar Dist (X-X) - Alternative naming for top distribution
+  if (normalizedType === 'top bar dist (x-x)') {
+    return calculateTopDistributionBar(direction, component, diameter);
+  }
+  
+  // Top Bar Dist (Y-Y) - Alternative naming for top distribution
+  if (normalizedType === 'top bar dist (y-y)') {
+    return calculateTopDistributionBar(direction, component, diameter);
+  }
+  
+  // ============================================================================
+  // COMBINED BARS
+  // ============================================================================
+  
+  // Bottom & Top Bar (X-X) - Continuous bar serving both functions
+  if (normalizedType === 'bottom & top bar (x-x)') {
     return calculateCombinedBar(direction, component, diameter, concreteGrade);
   }
   
-  // Special Bars
-  if (barType.includes('extra top')) {
+  // Bottom & Top Bar (Y-Y) - Continuous bar serving both functions
+  if (normalizedType === 'bottom & top bar (y-y)') {
+    return calculateCombinedBar(direction, component, diameter, concreteGrade);
+  }
+  
+  // Top & Bottom Bar (X-X) - Alternative naming for combined bars
+  if (normalizedType === 'top & bottom bar (x-x)') {
+    return calculateCombinedBar(direction, component, diameter, concreteGrade);
+  }
+  
+  // Top & Bottom Bar (Y-Y) - Alternative naming for combined bars
+  if (normalizedType === 'top & bottom bar (y-y)') {
+    return calculateCombinedBar(direction, component, diameter, concreteGrade);
+  }
+  
+  // ============================================================================
+  // SPECIAL BARS
+  // ============================================================================
+  
+  // Extra Top - Additional top reinforcement
+  if (normalizedType === 'extra top') {
     return calculateExtraTopBar(component, diameter);
   }
   
-  if (barType.includes('extra bottom')) {
+  // Extra Bottom - Additional bottom reinforcement
+  if (normalizedType === 'extra bottom') {
     return calculateExtraBottomBar(component, diameter, concreteGrade);
   }
   
-  if (barType.includes('chair bar')) {
+  // Chair Bar - Support bars for top reinforcement
+  if (normalizedType === 'chair bar') {
     return calculateChairBar(component, diameter);
   }
   
-  // Default fallback
+  // Default fallback for unrecognized slab bar types
   return { a: span };
 }
 
@@ -152,6 +251,35 @@ function calculateBottomBarCurtailed(
   const curtailedLength = span - leftBeam - rightBeam + (2 * developmentLength);
   
   return { a: Math.max(curtailedLength, span * 0.5) }; // Minimum 50% of span
+}
+
+/**
+ * Top Bar Full Span - Full span top reinforcement
+ * Formula: Span + 2×Ld (similar to bottom full span but for top)
+ */
+function calculateTopBarFullSpan(
+  direction: BarDirection,
+  component: ConcreteComponent,
+  diameter: number,
+  concreteGrade: ConcreteGrade
+): BarMeasurements {
+  const span = direction === 'X' ? component.spanX : component.spanY;
+  const developmentLength = getDevelopmentLength(diameter, concreteGrade);
+  
+  return { a: span + (2 * developmentLength) };
+}
+
+/**
+ * Top Distribution Bar - Distribution bars at top level
+ * Similar to bottom distribution but at top level
+ */
+function calculateTopDistributionBar(
+  direction: BarDirection,
+  component: ConcreteComponent,
+  diameter: number
+): BarMeasurements {
+  // Use same logic as bottom distribution bars
+  return calculateDistributionBar(direction, component, diameter);
 }
 
 /**
@@ -351,27 +479,39 @@ function calculateBeamBarMeasurements(
   const cover = component.cover;
   const developmentLength = getDevelopmentLength(diameter, concreteGrade);
   
-  if (barType.includes('top bar')) {
+  // Normalize bar type for exact matching
+  const normalizedType = barType.toLowerCase();
+  
+  // ============================================================================
+  // BEAM BAR TYPES
+  // ============================================================================
+  
+  // Top Bar - Top reinforcement in beams
+  if (normalizedType === 'top bar') {
     return calculateBeamTopBar(span, diameter, concreteGrade);
   }
   
-  if (barType.includes('bottom bar')) {
+  // Bottom Bar - Bottom reinforcement in beams
+  if (normalizedType === 'bottom bar') {
     return calculateBeamBottomBar(span, diameter, concreteGrade);
   }
   
-  if (barType.includes('side face')) {
+  // Side Face Bar - Side reinforcement for deep beams
+  if (normalizedType === 'side face bar') {
     return calculateBeamSideFaceBar(depth, diameter);
   }
   
-  if (barType.includes('stirrup')) {
+  // Stirrups - Shear reinforcement
+  if (normalizedType === 'stirrups') {
     return calculateBeamStirrup(width, depth, cover, diameter);
   }
   
-  if (barType.includes('extra bar')) {
+  // Extra Bar - Additional reinforcement
+  if (normalizedType === 'extra bar') {
     return { a: span + (2 * developmentLength) };
   }
   
-  // Default
+  // Default fallback for unrecognized beam bar types
   return { a: span };
 }
 
@@ -437,15 +577,29 @@ function calculateColumnBarMeasurements(
   const height = component.depth || 3000; // Column height
   const cover = component.cover;
   
-  if (barType.includes('main bar')) {
+  // Normalize bar type for exact matching
+  const normalizedType = barType.toLowerCase();
+  
+  // ============================================================================
+  // COLUMN BAR TYPES
+  // ============================================================================
+  
+  // Main Bar - Vertical reinforcement in columns
+  if (normalizedType === 'main bar') {
     return calculateColumnMainBar(height, diameter, concreteGrade);
   }
   
-  if (barType.includes('tie') || barType.includes('master tie')) {
+  // Tie - Lateral ties for column reinforcement
+  if (normalizedType === 'tie') {
     return calculateColumnTie(width, depth, cover, diameter);
   }
   
-  // Default
+  // Master Tie - Main lateral reinforcement
+  if (normalizedType === 'master tie') {
+    return calculateColumnTie(width, depth, cover, diameter);
+  }
+  
+  // Default fallback for unrecognized column bar types
   return { a: height };
 }
 
@@ -495,11 +649,20 @@ function calculateFootingBarMeasurements(
   
   const span = direction === 'X' ? length : width;
   
-  if (barType.includes('bottom main')) {
+  // Normalize bar type for exact matching
+  const normalizedType = barType.toLowerCase();
+  
+  // ============================================================================
+  // FOOTING BAR TYPES
+  // ============================================================================
+  
+  // Bottom Main (L) - Bottom main reinforcement in length direction
+  if (normalizedType === 'bottom main (l)') {
     return { a: span + (2 * developmentLength) };
   }
   
-  if (barType.includes('bottom dist')) {
+  // Bottom Dist (B) - Bottom distribution reinforcement in breadth direction
+  if (normalizedType === 'bottom dist (b)') {
     const footLength = 10 * diameter;
     return {
       a: span,
@@ -508,11 +671,13 @@ function calculateFootingBarMeasurements(
     };
   }
   
-  if (barType.includes('top main')) {
+  // Top Main (L) - Top main reinforcement in length direction
+  if (normalizedType === 'top main (l)') {
     return { a: span + (2 * developmentLength) };
   }
   
-  if (barType.includes('top dist')) {
+  // Top Dist (B) - Top distribution reinforcement in breadth direction
+  if (normalizedType === 'top dist (b)') {
     const footLength = 10 * diameter;
     return {
       a: span,
@@ -521,12 +686,13 @@ function calculateFootingBarMeasurements(
     };
   }
   
-  if (barType.includes('dowel')) {
+  // Dowel Bars - Connection bars to columns
+  if (normalizedType === 'dowel bars') {
     const dowelLength = 40 * diameter; // Standard dowel length
     return { a: dowelLength };
   }
   
-  // Default
+  // Default fallback for unrecognized footing bar types
   return { a: span };
 }
 
@@ -535,7 +701,7 @@ function calculateFootingBarMeasurements(
 // ============================================================================
 
 /**
- * Auto-calculate number of deductions based on bar type and measurements
+ * Auto-calculate number of deductions based on bar type and measurements for ALL bar types
  */
 export function calculateAutoDeductions(
   barType: string,
@@ -548,52 +714,128 @@ export function calculateAutoDeductions(
   const segments = [measurements.b, measurements.c, measurements.d, measurements.e, measurements.f]
     .filter(val => val && val > 0).length;
   
-  // SLAB deductions
+  // ============================================================================
+  // SLAB DEDUCTIONS
+  // ============================================================================
   if (componentType === 'SLAB') {
-    if (normalizedType.includes('top bar') && segments >= 4) {
+    
+    // Bottom Main Bars - U-shaped with extensions
+    if (normalizedType === 'bottom bar (x-x)' || normalizedType === 'bottom bar (y-y)') {
+      return 4; // U-shape: 4 bends (down, across, up, extensions)
+    }
+    
+    // Bottom Full Span Bars - Straight bars
+    if (normalizedType === 'bottom bar (x-x) full span' || normalizedType === 'bottom bar (y-y) full span') {
+      return 0; // Straight bars: no bends
+    }
+    
+    // Bottom Distribution Bars - L-shaped with feet
+    if (normalizedType === 'bottom bar dist (x-x)' || normalizedType === 'bottom bar dist (y-y)') {
+      return 2; // Distribution bars: 2 bends (foot lengths)
+    }
+    
+    // Top Main Bars - Similar to bottom bars
+    if (normalizedType === 'top bar (x-x)' || normalizedType === 'top bar (y-y)' || 
+        normalizedType === 'top main bar (x-x)' || normalizedType === 'top main bar (y-y)') {
       return 4; // U-shape: 4 bends
     }
-    if (normalizedType.includes('bottom bar') && segments > 0) {
-      return segments; // Each segment represents a bend
+    
+    // Top Full Span Bars - Straight bars
+    if (normalizedType === 'top bar (x-x) full span' || normalizedType === 'top bar (y-y) full span') {
+      return 0; // Straight bars: no bends
     }
-    if (normalizedType.includes('dist')) {
-      return 2; // Distribution bars: typically 2 bends (foot lengths)
+    
+    // Top Distribution Bars - L-shaped with feet
+    if (normalizedType === 'top dist bar (x-x)' || normalizedType === 'top dist bar (y-y)' ||
+        normalizedType === 'top bar dist (x-x)' || normalizedType === 'top bar dist (y-y)') {
+      return 2; // Distribution bars: 2 bends
     }
-    if (normalizedType.includes('chair')) {
-      return 2; // Chair bar: 2 bends
+    
+    // Combined Bars - Complex shape
+    if (normalizedType === 'bottom & top bar (x-x)' || normalizedType === 'bottom & top bar (y-y)' ||
+        normalizedType === 'top & bottom bar (x-x)' || normalizedType === 'top & bottom bar (y-y)') {
+      return 6; // Combined bars: more complex bending
+    }
+    
+    // Special Bars
+    if (normalizedType === 'extra top' || normalizedType === 'extra bottom') {
+      return 2; // Extra bars: typically L-shaped
+    }
+    
+    if (normalizedType === 'chair bar') {
+      return 2; // Chair bar: 2 bends (support shape)
     }
   }
   
-  // BEAM deductions
+  // ============================================================================
+  // BEAM DEDUCTIONS
+  // ============================================================================
   if (componentType === 'BEAM') {
-    if (normalizedType.includes('stirrup')) {
+    
+    // Stirrups - Rectangular with hooks
+    if (normalizedType === 'stirrups') {
       return 6; // Standard stirrup: 4 corners + 2 hooks
     }
-    if (normalizedType.includes('top bar') || normalizedType.includes('bottom bar')) {
+    
+    // Top/Bottom Bars - Typically straight or with hooks
+    if (normalizedType === 'top bar' || normalizedType === 'bottom bar') {
+      return segments > 0 ? 2 : 0; // Hooks if segments present, otherwise straight
+    }
+    
+    // Side Face Bars - Typically straight
+    if (normalizedType === 'side face bar') {
+      return 0; // Straight bars typically
+    }
+    
+    // Extra Bars - Typically straight
+    if (normalizedType === 'extra bar') {
       return 0; // Straight bars typically
     }
   }
   
-  // COLUMN deductions
+  // ============================================================================
+  // COLUMN DEDUCTIONS
+  // ============================================================================
   if (componentType === 'COLUMN') {
-    if (normalizedType.includes('tie')) {
+    
+    // Ties - Rectangular with hooks
+    if (normalizedType === 'tie' || normalizedType === 'master tie') {
       return 6; // Tie: 4 corners + 2 hooks
     }
-    if (normalizedType.includes('main')) {
+    
+    // Main Bars - Straight vertical bars
+    if (normalizedType === 'main bar') {
       return 0; // Straight vertical bars
     }
   }
   
-  // FOOTING deductions
+  // ============================================================================
+  // FOOTING DEDUCTIONS
+  // ============================================================================
   if (componentType === 'FOOTING') {
-    if (normalizedType.includes('dowel')) {
+    
+    // Main Bars - Straight with hooks
+    if (normalizedType === 'bottom main (l)' || normalizedType === 'top main (l)') {
+      return 2; // Main bars: hooks at ends
+    }
+    
+    // Distribution Bars - L-shaped with feet
+    if (normalizedType === 'bottom dist (b)' || normalizedType === 'top dist (b)') {
+      return 2; // Distribution bars: 2 bends (foot lengths)
+    }
+    
+    // Dowel Bars - Straight with hook
+    if (normalizedType === 'dowel bars') {
       return 1; // Dowel: 1 bend (hook)
     }
-    return Math.min(segments, 2); // Max 2 bends for footing bars
   }
   
-  // Default: infer from segments
-  return segments;
+  // ============================================================================
+  // DEFAULT FALLBACK
+  // ============================================================================
+  
+  // Default: infer from segments or use conservative estimate
+  return Math.min(segments, 4); // Cap at 4 bends for safety
 }
 
 // ============================================================================
@@ -661,7 +903,7 @@ function getMinSpacing(diameter: number): number {
 // ============================================================================
 
 /**
- * Calculate bars per member based on Excel BBS formulas
+ * Calculate bars per member based on Excel BBS formulas for ALL bar types
  */
 export function calculateBarsPerMember(
   barType: string,
@@ -671,27 +913,45 @@ export function calculateBarsPerMember(
 ): number {
   const normalizedType = barType.toLowerCase();
   
-  // Bottom Bar (X-X): Span Y / spacing
-  if (normalizedType.includes('bottom bar (x-x)')) {
-    return Math.ceil(component.spanY / spacing);
-  }
+  // ============================================================================
+  // SLAB BAR TYPES - BOTTOM MAIN BARS
+  // ============================================================================
   
-  // Bottom Bar Dist (X-X): (Top Ext's Left + Top Ext's Right) / spacing
-  if (normalizedType.includes('bottom bar dist (x-x)')) {
-    if (component.topExtensions) {
-      const totalExtension = component.topExtensions.left + component.topExtensions.right;
-      return Math.ceil(totalExtension / spacing);
-    }
-    return 1; // Fallback
+  // Bottom Bar (X-X): Span Y / spacing
+  if (normalizedType === 'bottom bar (x-x)') {
+    return Math.ceil(component.spanY / spacing);
   }
   
   // Bottom Bar (Y-Y): ROUNDUP(Span X / spacing, 0)
-  if (normalizedType.includes('bottom bar (y-y)')) {
+  if (normalizedType === 'bottom bar (y-y)') {
     return Math.ceil(component.spanX / spacing);
   }
   
+  // Bottom Bar (X-X) Full Span: Same as regular bottom bar
+  if (normalizedType === 'bottom bar (x-x) full span') {
+    return Math.ceil(component.spanY / spacing);
+  }
+  
+  // Bottom Bar (Y-Y) Full Span: Same as regular bottom bar
+  if (normalizedType === 'bottom bar (y-y) full span') {
+    return Math.ceil(component.spanX / spacing);
+  }
+  
+  // ============================================================================
+  // SLAB BAR TYPES - BOTTOM DISTRIBUTION BARS
+  // ============================================================================
+  
+  // Bottom Bar Dist (X-X): (Top Ext's Left + Top Ext's Right) / spacing
+  if (normalizedType === 'bottom bar dist (x-x)') {
+    if (component.topExtensions) {
+      const totalExtension = component.topExtensions.left + component.topExtensions.right;
+      return Math.ceil(totalExtension / spacing);
+    }
+    return 1; // Fallback
+  }
+  
   // Bottom Bar Dist (Y-Y): ROUNDUP((Top Ext's Top + Top Ext's Bottom) / spacing, 0)
-  if (normalizedType.includes('bottom bar dist (y-y)')) {
+  if (normalizedType === 'bottom bar dist (y-y)') {
     if (component.topExtensions) {
       const totalExtension = component.topExtensions.top + component.topExtensions.bottom;
       return Math.ceil(totalExtension / spacing);
@@ -699,16 +959,46 @@ export function calculateBarsPerMember(
     return 1; // Fallback
   }
   
-  // Top bars follow similar patterns
-  if (normalizedType.includes('top bar (x-x)') || normalizedType.includes('top main bar (x-x)')) {
+  // ============================================================================
+  // SLAB BAR TYPES - TOP MAIN BARS
+  // ============================================================================
+  
+  // Top Bar (X-X): Same pattern as bottom bars
+  if (normalizedType === 'top bar (x-x)') {
     return Math.ceil(component.spanY / spacing);
   }
   
-  if (normalizedType.includes('top bar (y-y)') || normalizedType.includes('top main bar (y-y)')) {
+  // Top Bar (Y-Y): Same pattern as bottom bars
+  if (normalizedType === 'top bar (y-y)') {
     return Math.ceil(component.spanX / spacing);
   }
   
-  if (normalizedType.includes('top dist bar (x-x)') || normalizedType.includes('top bar dist (x-x)')) {
+  // Top Bar (X-X) Full Span: Same as regular top bar
+  if (normalizedType === 'top bar (x-x) full span') {
+    return Math.ceil(component.spanY / spacing);
+  }
+  
+  // Top Bar (Y-Y) Full Span: Same as regular top bar
+  if (normalizedType === 'top bar (y-y) full span') {
+    return Math.ceil(component.spanX / spacing);
+  }
+  
+  // Top Main Bar (X-X): Alternative naming for top bars
+  if (normalizedType === 'top main bar (x-x)') {
+    return Math.ceil(component.spanY / spacing);
+  }
+  
+  // Top Main Bar (Y-Y): Alternative naming for top bars
+  if (normalizedType === 'top main bar (y-y)') {
+    return Math.ceil(component.spanX / spacing);
+  }
+  
+  // ============================================================================
+  // SLAB BAR TYPES - TOP DISTRIBUTION BARS
+  // ============================================================================
+  
+  // Top Dist Bar (X-X): Same as bottom distribution
+  if (normalizedType === 'top dist bar (x-x)') {
     if (component.topExtensions) {
       const totalExtension = component.topExtensions.left + component.topExtensions.right;
       return Math.ceil(totalExtension / spacing);
@@ -716,13 +1006,160 @@ export function calculateBarsPerMember(
     return 1;
   }
   
-  if (normalizedType.includes('top dist bar (y-y)') || normalizedType.includes('top bar dist (y-y)')) {
+  // Top Dist Bar (Y-Y): Same as bottom distribution
+  if (normalizedType === 'top dist bar (y-y)') {
     if (component.topExtensions) {
       const totalExtension = component.topExtensions.top + component.topExtensions.bottom;
       return Math.ceil(totalExtension / spacing);
     }
     return 1;
   }
+  
+  // Top Bar Dist (X-X): Alternative naming for top distribution
+  if (normalizedType === 'top bar dist (x-x)') {
+    if (component.topExtensions) {
+      const totalExtension = component.topExtensions.left + component.topExtensions.right;
+      return Math.ceil(totalExtension / spacing);
+    }
+    return 1;
+  }
+  
+  // Top Bar Dist (Y-Y): Alternative naming for top distribution
+  if (normalizedType === 'top bar dist (y-y)') {
+    if (component.topExtensions) {
+      const totalExtension = component.topExtensions.top + component.topExtensions.bottom;
+      return Math.ceil(totalExtension / spacing);
+    }
+    return 1;
+  }
+  
+  // ============================================================================
+  // SLAB BAR TYPES - COMBINED BARS
+  // ============================================================================
+  
+  // Bottom & Top Bar (X-X): Same as main bars
+  if (normalizedType === 'bottom & top bar (x-x)') {
+    return Math.ceil(component.spanY / spacing);
+  }
+  
+  // Bottom & Top Bar (Y-Y): Same as main bars
+  if (normalizedType === 'bottom & top bar (y-y)') {
+    return Math.ceil(component.spanX / spacing);
+  }
+  
+  // Top & Bottom Bar (X-X): Alternative naming for combined bars
+  if (normalizedType === 'top & bottom bar (x-x)') {
+    return Math.ceil(component.spanY / spacing);
+  }
+  
+  // Top & Bottom Bar (Y-Y): Alternative naming for combined bars
+  if (normalizedType === 'top & bottom bar (y-y)') {
+    return Math.ceil(component.spanX / spacing);
+  }
+  
+  // ============================================================================
+  // SLAB BAR TYPES - SPECIAL BARS
+  // ============================================================================
+  
+  // Extra Top: Typically fewer bars, use larger spacing
+  if (normalizedType === 'extra top') {
+    return Math.ceil(Math.min(component.spanX, component.spanY) / (spacing * 2));
+  }
+  
+  // Extra Bottom: Typically fewer bars, use larger spacing
+  if (normalizedType === 'extra bottom') {
+    return Math.ceil(Math.min(component.spanX, component.spanY) / (spacing * 2));
+  }
+  
+  // Chair Bar: Support bars, typically at regular intervals
+  if (normalizedType === 'chair bar') {
+    return Math.ceil(Math.max(component.spanX, component.spanY) / spacing);
+  }
+  
+  // ============================================================================
+  // BEAM BAR TYPES
+  // ============================================================================
+  
+  // Top Bar: Beam top reinforcement
+  if (normalizedType === 'top bar' && component.componentType === 'BEAM') {
+    return Math.ceil(component.spanY / spacing); // Across beam width
+  }
+  
+  // Bottom Bar: Beam bottom reinforcement
+  if (normalizedType === 'bottom bar' && component.componentType === 'BEAM') {
+    return Math.ceil(component.spanY / spacing); // Across beam width
+  }
+  
+  // Side Face Bar: Along beam depth
+  if (normalizedType === 'side face bar') {
+    return Math.ceil((component.depth || 450) / spacing);
+  }
+  
+  // Stirrups: Along beam length
+  if (normalizedType === 'stirrups') {
+    return Math.ceil(component.spanX / spacing); // Along beam length
+  }
+  
+  // Extra Bar: Additional beam reinforcement
+  if (normalizedType === 'extra bar') {
+    return Math.ceil(component.spanY / spacing);
+  }
+  
+  // ============================================================================
+  // COLUMN BAR TYPES
+  // ============================================================================
+  
+  // Main Bar: Vertical column reinforcement (typically 4, 6, 8 bars)
+  if (normalizedType === 'main bar' && component.componentType === 'COLUMN') {
+    // Standard column bar count based on column size
+    const perimeter = 2 * (component.spanX + component.spanY);
+    return Math.max(4, Math.ceil(perimeter / spacing)); // Minimum 4 bars
+  }
+  
+  // Tie: Lateral ties along column height
+  if (normalizedType === 'tie') {
+    return Math.ceil((component.depth || 3000) / spacing); // Along column height
+  }
+  
+  // Master Tie: Main lateral reinforcement
+  if (normalizedType === 'master tie') {
+    return Math.ceil((component.depth || 3000) / spacing);
+  }
+  
+  // ============================================================================
+  // FOOTING BAR TYPES
+  // ============================================================================
+  
+  // Bottom Main (L): Main reinforcement in length direction
+  if (normalizedType === 'bottom main (l)') {
+    return Math.ceil(component.spanY / spacing); // Across width
+  }
+  
+  // Bottom Dist (B): Distribution reinforcement in breadth direction
+  if (normalizedType === 'bottom dist (b)') {
+    return Math.ceil(component.spanX / spacing); // Across length
+  }
+  
+  // Top Main (L): Top main reinforcement in length direction
+  if (normalizedType === 'top main (l)') {
+    return Math.ceil(component.spanY / spacing); // Across width
+  }
+  
+  // Top Dist (B): Top distribution reinforcement in breadth direction
+  if (normalizedType === 'top dist (b)') {
+    return Math.ceil(component.spanX / spacing); // Across length
+  }
+  
+  // Dowel Bars: Connection bars (typically fixed number)
+  if (normalizedType === 'dowel bars') {
+    // Standard dowel pattern based on column size
+    const columnArea = component.spanX * component.spanY;
+    return Math.max(4, Math.ceil(columnArea / 10000)); // 1 bar per 100cm²
+  }
+  
+  // ============================================================================
+  // DEFAULT FALLBACK
+  // ============================================================================
   
   // Default fallback: use perpendicular span
   const relevantSpan = direction === 'X' ? component.spanY : component.spanX;
