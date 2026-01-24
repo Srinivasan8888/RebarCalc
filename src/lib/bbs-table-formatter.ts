@@ -7,7 +7,7 @@ import type {
   ConcreteComponent, 
   ComponentBarEntry, 
   CalculatedBarResult, 
-  BarMeasurements,
+  // BarMeasurements, // Unused
   BBSMetadata,
   ConcreteGrade
 } from '../types/component-types';
@@ -134,7 +134,7 @@ function createBBSTableRow(
 ): BBSTableRow {
   
   // Calculate bars per meter for spacing
-  const relevantSpan = barEntry.direction === 'X' ? component.spanY : component.spanX;
+  // const relevantSpan = barEntry.direction === 'X' ? component.spanY : component.spanX; // Unused
   const barsPerMeter = barEntry.spacing > 0 ? Math.ceil(1000 / barEntry.spacing) : 0;
   
   return {

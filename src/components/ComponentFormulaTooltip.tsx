@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Info, Calculator } from 'lucide-react';
+import { Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ComponentBarEntry } from '@/types/component-types';
 

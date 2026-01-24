@@ -1,4 +1,4 @@
-import React from 'react';
+// React is imported automatically by the build system
 import { CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ComponentBarEntry, CalculatedBarResult } from '@/types/component-types';

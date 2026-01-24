@@ -1,7 +1,7 @@
 
 import { describe, test, expect } from 'vitest';
 import { calculateComponentBarEntry } from '../lib/component-calculator';
-import { ComponentBarEntry } from '../types/component-types';
+import type { ComponentBarEntry } from '../types/component-types';
 
 describe('Excel BBS Compatibility Tests', () => {
 

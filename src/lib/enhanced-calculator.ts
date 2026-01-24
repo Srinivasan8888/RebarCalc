@@ -14,8 +14,8 @@ import type {
 
 import { 
   DEVELOPMENT_LENGTH_TABLES, 
-  WEIGHT_PER_METER,
-  COMPONENT_COVERS 
+  WEIGHT_PER_METER
+  // COMPONENT_COVERS // Unused
 } from './constants';
 
 // ============================================================================
@@ -73,10 +73,10 @@ function calculateSlabBarMeasurements(
 ): BarMeasurements {
   
   const span = direction === 'X' ? component.spanX : component.spanY;
-  const perpSpan = direction === 'X' ? component.spanY : component.spanX;
-  const cover = component.cover;
-  const depth = component.depth || 125;
-  const developmentLength = getDevelopmentLength(diameter, concreteGrade);
+  // const perpSpan = direction === 'X' ? component.spanY : component.spanX; // Unused
+  // const cover = component.cover; // Unused
+  // const depth = component.depth || 125; // Unused
+  // const developmentLength = getDevelopmentLength(diameter, concreteGrade); // Unused
   
   // Normalize bar type for better matching
   const normalizedType = barType.toLowerCase();
@@ -228,7 +228,8 @@ function calculateSlabBarMeasurements(
  * Bottom Bar Curtailed - Accounts for beam widths and development length
  * Formula: Span - Left Beam - Right Beam + 2×Ld
  */
-function calculateBottomBarCurtailed(
+// Preserved for future use - curtailed bar calculations
+export function _calculateBottomBarCurtailed(
   direction: BarDirection,
   component: ConcreteComponent,
   diameter: number,
@@ -306,7 +307,7 @@ function calculateBottomBarFullSpan(
 function calculateTopBarWithExtensions(
   direction: BarDirection,
   component: ConcreteComponent,
-  diameter: number
+  _diameter: number // Prefix with _ to indicate intentionally unused
 ): BarMeasurements {
   const span = direction === 'X' ? component.spanX : component.spanY;
   const cover = component.cover;
@@ -318,7 +319,7 @@ function calculateTopBarWithExtensions(
     return { a: span };
   }
   
-  const { left, right, top, bottom } = component.beamWidths;
+  const { left, top } = component.beamWidths;
   const { left: extLeft, right: extRight, top: extTop, bottom: extBottom } = component.topExtensions;
   
   if (direction === 'X') {
@@ -375,7 +376,7 @@ function calculateDistributionBar(
   }
   
   // With beam widths - match Excel format exactly
-  const { left, right, top, bottom } = component.beamWidths;
+  const { left, right, top } = component.beamWidths;
   const depth = component.depth || 125; // Component depth
   
   if (direction === 'X') {
@@ -414,7 +415,7 @@ function calculateCombinedBar(
   direction: BarDirection,
   component: ConcreteComponent,
   diameter: number,
-  concreteGrade: ConcreteGrade
+  _concreteGrade: ConcreteGrade // Prefix with _ to indicate intentionally unused
 ): BarMeasurements {
   // Use top bar calculation as it's more comprehensive
   return calculateTopBarWithExtensions(direction, component, diameter);
@@ -424,7 +425,7 @@ function calculateCombinedBar(
  * Extra Top Bar - Additional top reinforcement
  */
 function calculateExtraTopBar(
-  component: ConcreteComponent,
+  _component: ConcreteComponent, // Prefix with _ to indicate intentionally unused
   diameter: number
 ): BarMeasurements {
   const anchorage = 12 * diameter; // Standard anchorage length
@@ -435,7 +436,7 @@ function calculateExtraTopBar(
  * Extra Bottom Bar - Additional bottom reinforcement
  */
 function calculateExtraBottomBar(
-  component: ConcreteComponent,
+  _component: ConcreteComponent, // Prefix with _ to indicate intentionally unused
   diameter: number,
   concreteGrade: ConcreteGrade
 ): BarMeasurements {
@@ -643,8 +644,8 @@ function calculateFootingBarMeasurements(
   
   const length = component.spanX; // Footing length
   const width = component.spanY; // Footing width
-  const depth = component.depth || 500; // Footing depth
-  const cover = component.cover;
+  // const depth = component.depth || 500; // Footing depth // Unused
+  // const cover = component.cover; // Unused
   const developmentLength = getDevelopmentLength(diameter, concreteGrade);
   
   const span = direction === 'X' ? length : width;
@@ -1206,7 +1207,7 @@ export function calculateCutLengthByBarType(
 // ============================================================================
 
 function getDevelopmentLength(diameter: number, concreteGrade: ConcreteGrade): number {
-  const table = DEVELOPMENT_LENGTH_TABLES[concreteGrade];
+  const table = DEVELOPMENT_LENGTH_TABLES[concreteGrade] as Record<number, number>;
   return table[diameter] || (50 * diameter); // Fallback to 50D
 }
 

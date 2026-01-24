@@ -3,9 +3,9 @@
  * Testing the Bottom Bar Dist (X-X) calculation to verify 1800mm result
  */
 
-import type { ConcreteComponent, ComponentBarEntry, BBSMetadata } from '../types/component-types';
+import type { ConcreteComponent, /* ComponentBarEntry, */ BBSMetadata } from '../types/component-types';
 import { generateBBSTable, formatBBSTableConsole } from './bbs-table-formatter';
-import { calculateComponentBarEntryEnhanced, calculateBarMeasurementsAuto } from './enhanced-calculator';
+import { /* calculateComponentBarEntryEnhanced, */ calculateBarMeasurementsAuto } from './enhanced-calculator';
 
 // ============================================================================
 // TEST DATA FROM USER'S SCREENSHOT

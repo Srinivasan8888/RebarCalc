@@ -10,7 +10,8 @@ import type {
   ConcreteComponentType, 
   BBSMetadata, 
   ComponentBarEntry,
-  BarMeasurements
+  BarMeasurements,
+  BarDirection
 } from '@/types/component-types';
 import { 
   DEVELOPMENT_LENGTH_TABLES,
@@ -30,7 +31,6 @@ import {
   calculateCutLengthByBarType
 } from '@/lib/enhanced-calculator';
 import { TotalSteelWeight } from './TotalSteelWeight';
-import { CalculationVerificationBadge } from './CalculationVerificationBadge';
 import { ComponentFormulaTooltip } from './ComponentFormulaTooltip';
 
 interface BBSSpreadsheetViewProps {
