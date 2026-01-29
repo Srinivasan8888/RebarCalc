@@ -31,7 +31,7 @@ export function AppLayout({
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+        <div className="w-full px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Left side - Logo and navigation */}
             <div className="flex items-center gap-4">
@@ -103,7 +103,7 @@ export function AppLayout({
       </header>
 
       {/* Main content area */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="w-full px-6 py-6">
         {children}
       </main>
     </div>

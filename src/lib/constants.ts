@@ -225,3 +225,9 @@ export const BAR_TYPES = {
 
 // Footing types (pile variants only for footings)
 export const FOOTING_TYPES = ['ISOLATED', 'COMBINED', 'PILE_CYLINDER', 'PILE_CUBOID'];
+
+// Default Development Lengths (Ld) for M30 Concrete (shim for logic verification)
+export const DEFAULT_DEVELOPMENT_LENGTHS = DEVELOPMENT_LENGTH_TABLES.M30;
+
+// Default Standard Bar Length (12 meters)
+export const DEFAULT_STANDARD_BAR_LENGTH = 12000;

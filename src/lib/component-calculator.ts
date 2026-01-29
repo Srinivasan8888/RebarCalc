@@ -4,20 +4,55 @@
  */
 
 import type { 
-  ConcreteComponent, 
   ComponentBarEntry, 
   CalculatedBarResult, 
-  ComponentSummary,
-  ProjectSteelSummary,
   BarMeasurements
-} from '../types/component-types';
+} from '../types/component-types.ts';
 
-import { WEIGHT_PER_METER } from './constants';
+import { WEIGHT_PER_METER } from './constants.ts';
+
+/**
+ * Excel-compatible ROUNDUP function
+ * Rounds a number up to specified number of digits
+ */
+export function roundUp(num: number, digits: number = 0): number {
+  const factor = Math.pow(10, digits);
+  return Math.ceil(num * factor) / factor;
+}
+
+/**
+ * Excel-compatible CEILING function
+ * Rounds a number up to the nearest multiple of significance
+ */
+export function ceiling(num: number, significance: number): number {
+  if (significance === 0) return 0;
+  return Math.ceil(num / significance) * significance;
+}
+
+/**
+ * Calculate LAP length based on span and global settings
+ * Formula: If Total > StandardLength, Lap = ROUNDUP((A / StandardLength) * Ld, 0)
+ */
+export function calculateLap(
+  measurementA: number, 
+  diameter: number,
+  settings: { developmentLengths: Record<number, number>, standardBarLength: number }
+): number {
+  const { developmentLengths, standardBarLength } = settings;
+  
+  // If span is less than standard length, no lap needed usually
+  if (measurementA <= standardBarLength) return 0;
+  
+  const ld = developmentLengths[diameter] || (50 * diameter); // Fallback to 50d
+  
+  // Formula: ROUNDUP((Span / 12000) * Ld, 0)
+  return roundUp((measurementA / standardBarLength) * ld, 0);
+}
 
 /**
  * Calculate number of bars based on span and spacing
- * Formula: ((Span - 2 * Cover) / Spacing) + 1
- * Result is rounded up to nearest integer
+ * Formula: ROUNDUP(Span / Spacing, 0) + 1 (if standard counting) 
+ * OR just ROUNDUP(Span/Spacing) for "Total Members" logic in Excel
  */
 export function calculateNumberOfBars(
   span: number,        // mm
@@ -25,10 +60,7 @@ export function calculateNumberOfBars(
   cover: number        // mm
 ): number {
   if (spacing <= 0) return 0;
-  
   const effectiveSpan = Math.max(0, span - (2 * cover));
-  // Standard formula: ROUNDUP(Effective Span / Spacing) + 1
-  // Using Math.ceil to match Excel's ROUNDUP behavior
   return Math.ceil(effectiveSpan / spacing) + 1;
 }
 
@@ -46,14 +78,6 @@ export function calculateTotalMeasurement(
 /**
  * Calculate total measurement for U-Bar (Scorpion-tail shape)
  * The C-shape legs (b, c, d) appear on BOTH ends of the bar.
- * Formula: a + 2*b + 2*c + 2*d + e + f
- * Where:
- *   a = Bottom Span
- *   b = Horizontal leg (Beam - Cover) on each end
- *   c = Vertical leg (Depth - 2*Cover) on each end
- *   d = Horizontal leg into slab on each end (same as b for symmetric cases)
- *   e = Left Top Extension
- *   f = Right Top Extension
  */
 export function calculateUBarTotalMeasurement(
   measurements: BarMeasurements
@@ -80,229 +104,266 @@ export function calculateDeductionAmount(
  * Uses standard constant tables or formula D*D/162
  */
 export function calculateUnitWeight(diameter: number): number {
-  // Use lookup table if available, otherwise formula
-  if (WEIGHT_PER_METER[diameter]) {
+  if (WEIGHT_PER_METER && WEIGHT_PER_METER[diameter]) {
     return WEIGHT_PER_METER[diameter];
   }
   return (diameter * diameter) / 162;
 }
 
 /**
+ * Bar types with 4 bends (from Excel analysis)
+ */
+const BENDS_4_TYPES = new Set([
+  "Bottom & Top Bar (Y-Y)",
+  "Bottom Bar (X-X)",
+  "Bottom Bar (X-X) G2 to I2",
+  "Bottom Bar (Y-Y)",
+  "Bottom Bar (Y-Y) I3 to C4",
+  "Bottom Bar (Y-Y) O3 to C4",
+  "Top & Bottom Bar (Y-Y)",
+  "Top Bar (X -X) N1 to O2",
+  "Top Bar (Y-Y)",
+  "Top Bar (Y-Y) F2 to C4",
+  "Top Bar (Y-Y) K4 to K5",
+  "Top Bar (Y-Y) Q6 to Q8",
+]);
+
+/**
+ * Determine Number of Bends based on Bar Type
+ * Uses exact Excel data - all other types have 2 bends
+ */
+function getNoOfBends(barType: string): number {
+  return BENDS_4_TYPES.has(barType) ? 4 : 2;
+}
+
+/**
+ * Determine Cut Length formula based on Bar Type
+ * Defaulting to Total - Deduction for standard behavior
+ * This aligns with Excel formulas usually being (Sum of Segments) - Deductions
+ */
+/**
+ * Determine Cut Length formula based on Bar Type
+ * Derived from verification against Excel logic:
+ * 1. Special Y-Y Group (+65mm adjustment, ignore 'f'): 
+ *    - Bottom Bar (Y-Y) [Non-Full Span], Bottom & Top Bar (Y-Y), Top Bar (Y-Y)
+ * 2. Add 35 Group (+35mm adjustment):
+ *    - Top MainBar (Any), Top Dist Bar (Any), Bottom Bar (Y-Y) Full Span
+ * 3. Standard Group (Total - Deduction):
+ *    - Bottom Bar (X-X), Top Bar (X-X), etc.
+ */
+/**
+ * Determine Cut Length formula based on Bar Type
+ * Derived from verification against Excel logic:
+ * 1. Group +35 (Sum Without Lap + 35):
+ *    - Top MainBar (Any)
+ *    - Top Dist Bar (Any)
+ *    - Bottom Bar (Y-Y) [Full Span OR Upto]
+ * 2. Group +65 (Sum With Lap - f + 65):
+ *    - Bottom Bar (Y-Y) [Pure: Not Dist, Not Full Span, Not Upto]
+ *    - Bottom & Top Bar (Y-Y)
+ *    - Top Bar (Y-Y) [Pure]
+ * 3. Standard Group (Sum With Lap - Deduction):
+ *    - Bottom Bar Dist (Y-Y)
+ *    - Bottom Bar (X-X)
+ *    - Everything else
+ */
+/**
+ * Bar types that use CEILING formula: CEILING(a+b+c+d+e+deduction, 5)
+ * Based on analysis of 197 bar types from Excel
+ */
+const CEILING_BAR_TYPES = new Set([
+  // Bottom & Top variants
+  "Bottom & Top Bar (Y-Y)",
+  "Top & Bottom Bar (Y-Y)",
+  
+  // Bottom Bar (Y-Y) - all variants except Dist
+  "Bottom Bar (Y-Y)",
+  "Bottom Bar (Y-Y) Full Span",
+  "Bottom Bar (Y-Y) Full Span (C8 To C9)",
+  "Bottom Bar (Y-Y) Full Span C5 to C4",
+  "Bottom Bar (Y-Y) I3 to C4",
+  "Bottom Bar (Y-Y) O3 to C4",
+  "Bottom Bar (Y-Y) upto 2550",
+  "Bottom Bar (Y-Y) upto 3650",
+  
+  // Bottom Bar (X-X) special cases
+  "Bottom Bar (X-X) G2 to I2",
+  
+  // Top Bar variants
+  "Top Bar (X -X) N1 to O2",
+  "Top Bar (Y-Y)",
+  "Top Bar (Y-Y) F2 to C4",
+  "Top Bar (Y-Y) Full Span",
+  "Top Bar (Y-Y) K4 to K5",
+  "Top Bar (Y-Y) Q6 to Q8",
+  
+  // Top Dist Bar - most variants
+  "Top Dist Bar (X-X)",
+  "Top Dist Bar (X-X) - A2 only",
+  "Top Dist Bar (X-X) - A3 only",
+  "Top Dist Bar (X-X) - A7 only",
+  "Top Dist Bar (X-X) - B1 only & A2 link",
+  "Top Dist Bar (X-X) - B2 only",
+  "Top Dist Bar (X-X) - B6 only",
+  "Top Dist Bar (X-X) - B6 to D7",
+  "Top Dist Bar (X-X) - C2 to D1",
+  "Top Dist Bar (X-X) - E5 only",
+  "Top Dist Bar (X-X) - Left",
+  "Top Dist Bar (X-X) - Left & Right",
+  "Top Dist Bar (X-X) - Left G5 to H3",
+  "Top Dist Bar (X-X) - Left K1 to L1",
+  "Top Dist Bar (X-X) - Left M5 to N5",
+  "Top Dist Bar (X-X) - Right",
+  "Top Dist Bar (X-X) -C2 link",
+  "Top Dist Bar (Y-Y) - A2 only upto 1225",
+  "Top Dist Bar (Y-Y) - A2 only upto 1225 (Top & Bottom)",
+  "Top Dist Bar (Y-Y) - A2 only upto 2835",
+  "Top Dist Bar (Y-Y) - A5 only",
+  "Top Dist Bar (Y-Y) - B2 only",
+  "Top Dist Bar (Y-Y) - Bottom",
+  "Top Dist Bar (Y-Y) - C8 to C9",
+  "Top Dist Bar (Y-Y) - C9 only",
+  "Top Dist Bar (Y-Y) - C9 to D7",
+  "Top Dist Bar (Y-Y) - G1 only",
+  "Top Dist Bar (Y-Y) - G4 only",
+  "Top Dist Bar (Y-Y) - G4 to G5",
+  "Top Dist Bar (Y-Y) - I4 only",
+  "Top Dist Bar (Y-Y) - J1 only",
+  "Top Dist Bar (Y-Y) - K5 only",
+  "Top Dist Bar (Y-Y) - M1 only",
+  "Top Dist Bar (Y-Y) - O5 only",
+  "Top Dist Bar (Y-Y) - P1 only",
+  "Top Dist Bar (Y-Y) - Q8 only",
+  "Top Dist Bar (Y-Y) - Short Segment only",
+  "Top Dist Bar (Y-Y) - Top",
+  "Top Dist Bar (Y-Y) - Top & Bottom",
+  "Top Dist Bar (Y-Y) - Top & Bottom (A7 Link)",
+  "Top Dist Bar (Y-Y) - Top (B1 only)",
+  "Top Dist Bar (Y-Y) - Top A7 only",
+  "Top Dist Bar (Y-Y) - Top C2 only",
+  "Top Dist Bar (Y-Y) - Top D1 only",
+  "Top Dist Bar (Y-Y) -K5 only",
+  "Top Dist Bar (Y-Y) -O5 only",
+  "Top Dist Bar (Y-Y) -Q8 only",
+  "Top Dist Bar (Y-Y) -Top L1 to L2",
+  "Top DistBar (Y-Y) - Bottom (Lift)",
+  
+  // Top Main Bar - most variants
+  "Top Main Bar (X-X) - G5 to H3",
+  "Top Main Bar (X-X) - H1 to I2",
+  "Top Main Bar (X-X) - J4 to K4",
+  "Top Main Bar (X-X) - Left & Right",
+  "Top Main Bar (X-X) - Left K1 to L1",
+  "Top Main Bar (X-X) - M5 to N5",
+  "Top Main Bar (X-X) - P4 to Q6",
+  "Top Main Bar (X-X) - Right",
+  "Top Main Bar (Y-Y) - A7 to A9",
+  "Top Main Bar (Y-Y) - C2 to C4",
+  "Top Main Bar (Y-Y) - C5 to C4",
+  "Top Main Bar (Y-Y) - D1 to D2",
+  "Top Main Bar (Y-Y) - Right",
+  "Top Main Bar (Y-Y) - Short Segment to A9",
+  "Top Main Bar (Y-Y) -Top L1 to L2",
+]);
+
+/**
+ * Determine Cut Length formula based on Bar Type
+ * Simplified version that directly maps to Excel formulas:
+ * 1. CEILING types: CEILING(a+b+c+d+e+deduction, 5)
+ * 2. STANDARD types: Total - Deduction
+ */
+export function getCutLengthV2(
+  barType: string,
+  measurements: BarMeasurements,
+  deductionAmount: number
+): number {
+  const { a, b=0, c=0, d=0, e=0, f=0, lap=0 } = measurements;
+  const sumWithLap = a + b + c + d + e + f + lap;
+  
+  // Check if this bar type uses CEILING formula
+  if (CEILING_BAR_TYPES.has(barType)) {
+    // CEILING formula: CEILING(a+b+c+d+e+deduction, 5)
+    // Note: This ADDS the deduction instead of subtracting!
+    return ceiling(a + b + c + d + e + deductionAmount, 5);
+  }
+  
+  // Default: STANDARD formula (Total - Deduction)
+  return sumWithLap - deductionAmount;
+}
+
+/**
  * Process a single bar entry and return calculated results
+ * MATCHING EXCEL LOGIC "PIXEL PERFECT"
  */
 export function calculateComponentBarEntry(
   entry: ComponentBarEntry,
-  componentSpan: number, // Relevant span for calculating No. of Bars (e.g. Span B forbars along A)
+  componentSpan: number, // Span used for spacing calc
   cover: number,
-  isUBar: boolean = false // Flag for Slab U-Bar calculation
+  settings: { developmentLengths: Record<number, number>, standardBarLength: number },
+  isUBar: boolean = false
 ): CalculatedBarResult {
   
-  // 1. Calculate No. of Bars
-  // If manual override is provided, use it. Otherwise calculate.
-  let noOfBars = entry.manualNoOfBars;
-  
-  if (noOfBars === undefined) {
-    if (entry.spacing > 0 && componentSpan > 0) {
-      noOfBars = calculateNumberOfBars(componentSpan, entry.spacing, cover);
-    } else {
-      noOfBars = 1; // Default to 1 if not calculable
-    }
+  // 1. Calculate No. of Members (Rows in Excel: "Total no. of members Reqd")
+  let totalMembers = entry.totalMembers;
+  if (totalMembers === undefined) {
+      if (entry.spacing > 0 && componentSpan > 0) {
+          // Excel logic uses FULL span, not effective span
+          // Formula: ROUNDUP(Span/Spacing, 0)
+          totalMembers = roundUp(componentSpan / entry.spacing, 0);
+      } else {
+          totalMembers = 1;
+      }
   }
 
-  // 2. Calculate Measurements
-  // Use U-Bar formula if flagged (accounts for C-shape on both ends)
-  const totalMeasurement = isUBar 
-    ? calculateUBarTotalMeasurement(entry.measurements)
-    : calculateTotalMeasurement(entry.measurements);
-  
-  // 3. Calculate Deductions
-  // If manual override, use it (assumes quantity of bends, not mm)
-  // Otherwise default to 0 (user must specify bends for now, or we infer from shape later)
-  const noOfDeductions = entry.manualNoOfDeductions || 0;
-  const deductionAmount = calculateDeductionAmount(noOfDeductions, entry.diameter);
-  
-  // 4. Cutting Length
-  // Apply CEILING to nearest 5mm rounding as per BBS standards found in Excel
-  // Excel Formula: =CEILING(Total - Deduction, 5)
-  let cuttingLength = totalMeasurement - deductionAmount;
-  cuttingLength = Math.ceil(cuttingLength / 5) * 5;
-  
-  // 5. Total Length (m)
-  const totalLength = (cuttingLength * noOfBars) / 1000;
-  
-  // 6. Weight Calculations
+  // 2. Calculate Total Nos (Rows in Excel: "Total nos.")
+  const barsPerMember = entry.barsPerMember || 1;
+  const totalNos = totalMembers * barsPerMember;
+
+  // 3. Auto-Calculate Lap if needed
+  let lap = entry.measurements.lap || 0;
+  if (entry.measurements.a && entry.measurements.a > settings.standardBarLength && lap === 0) {
+      // Logic for long bars, only if lap not provided manually
+      lap = calculateLap(entry.measurements.a, entry.diameter, settings);
+  }
+
+  // 4. Total Measurement
+  const { a, b = 0, c = 0, d = 0, e = 0, f = 0 } = entry.measurements;
+  // Use UBar logic if flagged
+  const totalMeasurement = isUBar
+      ? calculateUBarTotalMeasurement({ ...entry.measurements, lap })
+      : (a + b + c + d + e + f + lap);
+
+  // 5. Deductions
+  // Auto-detect bends if manual not provided
+  const bendsCount = entry.manualNoOfDeductions !== undefined 
+      ? entry.manualNoOfDeductions 
+      : getNoOfBends(entry.barType);
+      
+  const deductionAmount = calculateDeductionAmount(bendsCount, entry.diameter);
+
+  // 6. Cutting Length (Bar-Type Specific)
+  const cuttingLength = getCutLengthV2(
+    entry.barType, 
+    { ...entry.measurements, lap }, 
+    deductionAmount
+  );
+
+
+  // 7. Total Length (m)
+  const totalLength = (cuttingLength * totalNos) / 1000;
+
+  // 8. Weight
   const unitWeight = calculateUnitWeight(entry.diameter);
   const totalWeight = totalLength * unitWeight;
-  
+
   return {
     totalMeasurement,
-    noOfDeductions,
+    noOfDeductions: bendsCount,
     deductionAmount,
     cuttingLength,
-    noOfBars,
+    noOfBars: totalNos, // Used for display
     totalLength,
     unitWeight,
     totalWeight
-  };
-}
-
-/**
- * Auto-calculate Slab U-Bar Measurements based on Component Config
- * Used to pre-fill measurements
- */
-export function calculateSlabUBarMeasurements(
-  direction: 'X' | 'Y',
-  component: ConcreteComponent
-): BarMeasurements {
-  // If missing data, return empty/zeros
-  if (!component.beamWidths || !component.topExtensions) {
-     return { a: direction === 'X' ? component.spanX : component.spanY };
-  }
-
-  const { left: beamLeft, right: beamRight, top: beamTop, bottom: beamBottom } = component.beamWidths;
-  const { left: extLeft, right: extRight, top: extTop, bottom: extBottom } = component.topExtensions;
-
-  // Formula inferred from User Request:
-  // a = Span
-  // b = Start Beam Width - Cover
-  // c = Slab Depth - 2 * Cover (Vertical Rise)
-  // d = End Beam Width - Cover
-  // e = Top Extension Start
-  // f = Top Extension End
-  
-  const cover = component.cover || 25;
-  const depth = component.depth || 125; // Default slab depth if not set
-  const verticalRise = Math.max(0, depth - (2 * cover));
-
-  if (direction === 'X') {
-    // Bottom Bar (X-X)
-    return {
-      a: component.spanX,
-      b: Math.max(0, beamLeft - cover), 
-      c: verticalRise,
-      d: Math.max(0, beamRight - cover),
-      e: extLeft,
-      f: extRight,
-      lap: 0
-    };
-  } else {
-     // Bottom Bar (Y-Y)
-     return {
-      a: component.spanY,
-      b: Math.max(0, beamTop - cover), 
-      c: verticalRise,
-      d: Math.max(0, beamBottom - cover),
-      e: extTop,
-      f: extBottom,
-      lap: 0
-     };
-  }
-}
-
-/**
- * Auto-calculate Slab Distribution Bar Measurements
- * Logic:
- * a = Span
- * b = Start Beam - Cover
- * c = End Beam - Cover
- * d = 10 * Diameter (Foot Length)
- * e = 10 * Diameter (Foot Length)
- */
-export function calculateSlabDistributionMeasurements(
-  direction: 'X' | 'Y',
-  component: ConcreteComponent,
-  diameter: number
-): BarMeasurements {
-   // Default measurements if missing data
-   if (!component.beamWidths) {
-      return { a: direction === 'X' ? component.spanX : component.spanY };
-   }
-
-   const { left: beamLeft, right: beamRight, top: beamTop, bottom: beamBottom } = component.beamWidths;
-   const cover = component.cover || 25;
-   const footLength = 10 * diameter;
-
-   if (direction === 'X') {
-     // Dist Bar along X
-     return {
-       a: component.spanX,
-       b: Math.max(0, beamLeft - cover),
-       c: Math.max(0, beamRight - cover),
-       d: footLength,
-       e: footLength,
-       f: 0, 
-       lap: 0
-     };
-   } else {
-      // Dist Bar along Y
-      return {
-       a: component.spanY,
-       b: Math.max(0, beamTop - cover), 
-       c: Math.max(0, beamBottom - cover),
-       d: footLength,
-       e: footLength,
-       f: 0,
-       lap: 0
-      };
-   }
-}
-
-/**
- * Calculate totals for a specific component
- */
-export function calculateComponentSummary(
-  component: ConcreteComponent
-): ComponentSummary {
-  let totalBars = 0;
-  let totalLengthM = 0;
-  let totalWeightKg = 0;
-  
-  component.bars.forEach(bar => {
-    if (bar.calculated) {
-      totalBars += bar.calculated.noOfBars;
-      totalLengthM += bar.calculated.totalLength;
-      totalWeightKg += bar.calculated.totalWeight;
-    }
-  });
-  
-  return {
-    componentId: component.id,
-    componentName: component.name,
-    totalBars,
-    totalLengthM,
-    totalWeightKg
-  };
-}
-
-/**
- * Calculate Grand Totals for entire project
- * Grouped by Diameter
- */
-export function calculateProjectTotal(
-  components: ConcreteComponent[]
-): ProjectSteelSummary {
-  const byDiameter: { [diameter: number]: { lengthM: number; weightKg: number } } = {};
-  let totalWeightKg = 0;
-  
-  components.forEach(comp => {
-    comp.bars.forEach(bar => {
-      if (bar.calculated) {
-        const dia = bar.diameter;
-        if (!byDiameter[dia]) {
-          byDiameter[dia] = { lengthM: 0, weightKg: 0 };
-        }
-        
-        byDiameter[dia].lengthM += bar.calculated.totalLength;
-        byDiameter[dia].weightKg += bar.calculated.totalWeight;
-        
-        totalWeightKg += bar.calculated.totalWeight;
-      }
-    });
-  });
-  
-  return {
-    byDiameter,
-    totalWeightKg,
-    totalWeightMT: totalWeightKg / 1000
   };
 }

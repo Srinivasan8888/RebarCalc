@@ -1,0 +1,414 @@
+
+=========================================
+Running "Pixel Perfect" Verification
+=========================================
+
+Checking Sheet: 20th Floor
+[FAIL] Row 0: Bottom Bar (X-X)
+Expected: 4596, Got: 4620
+Inputs: {"a":3160,"b":260,"c":260,"d":65,"e":65,"f":850,"lap":null}
+Debug: Bends=4, Dia=8, Sum=4660
+[FAIL] Row 45: Bottom Bar (X-X)
+Expected: 3901, Got: 3925
+Inputs: {"a":2365,"b":260,"c":260,"d":65,"e":65,"f":950,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3965
+[FAIL] Row 57: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 75: Bottom Bar (X-X)
+Expected: 2341, Got: 2365
+Inputs: {"a":1375,"b":140,"c":260,"d":65,"e":65,"f":500,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2405
+[FAIL] Row 80: Bottom & Top Bar (Y-Y)
+Expected: 1040, Got: 1037
+Inputs: {"a":617,"b":130,"c":95,"d":130,"e":null,"f":null,"lap":null}
+Debug: Bends=4, Dia=8, Sum=972
+[FAIL] Row 93: Bottom Bar (X-X)
+Expected: 4566, Got: 4590
+Inputs: {"a":3100,"b":140,"c":260,"d":65,"e":65,"f":1000,"lap":null}
+Debug: Bends=4, Dia=8, Sum=4630
+[FAIL] Row 97: Bottom Bar (X-X)
+Expected: 4616, Got: 4640
+Inputs: {"a":3100,"b":260,"c":140,"d":65,"e":65,"f":1050,"lap":null}
+Debug: Bends=4, Dia=8, Sum=4680
+[FAIL] Row 148: Bottom Bar (X-X)
+Expected: 3736, Got: 3760
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":700,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3800
+[FAIL] Row 168: Bottom Bar (X-X)
+Expected: 2341, Got: 2365
+Inputs: {"a":1375,"b":260,"c":140,"d":65,"e":65,"f":500,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2405
+[FAIL] Row 177: Bottom Bar (X-X)
+Expected: 3761, Got: 3785
+Inputs: {"a":2275,"b":260,"c":260,"d":65,"e":65,"f":900,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3825
+[FAIL] Row 187: Bottom Bar (X-X)
+Expected: 3191, Got: 3215
+Inputs: {"a":1975,"b":260,"c":140,"d":65,"e":65,"f":750,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3255
+[FAIL] Row 191: Bottom Bar (X-X)
+Expected: 3161, Got: 3185
+Inputs: {"a":1825,"b":260,"c":260,"d":65,"e":65,"f":750,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3225
+[FAIL] Row 244: Bottom Bar (Y-Y)
+Expected: 3311, Got: 2990
+Inputs: {"a":2275,"b":260,"c":260,"d":65,"e":65,"f":450,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3375
+[FAIL] Row 248: Bottom & Top Bar (Y-Y)
+Expected: 2320, Got: 2317
+Inputs: {"a":1932,"b":130,"c":95,"d":95,"e":null,"f":null,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2252
+[FAIL] Row 249: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 255: Bottom Bar (X-X)
+Expected: 1946, Got: 1970
+Inputs: {"a":1375,"b":130,"c":70,"d":65,"e":95,"f":275,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2010
+[FAIL] Row 280: Bottom Bar (X-X)
+Expected: 2471, Got: 2495
+Inputs: {"a":1800,"b":130,"c":70,"d":65,"e":95,"f":375,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2535
+[FAIL] Row 285: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 342: Bottom Bar (X-X)
+Expected: 1406, Got: 1438
+Inputs: {"a":1020,"b":260,"c":95,"d":95,"e":null,"f":null,"lap":null}
+Debug: Bends=2, Dia=16, Sum=1470
+[FAIL] Row 352: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 356: Bottom Bar (X-X)
+Expected: 2471, Got: 2495
+Inputs: {"a":1800,"b":130,"c":70,"d":65,"e":95,"f":375,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2535
+[FAIL] Row 365: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 385: Bottom Bar (X-X)
+Expected: 1946, Got: 1970
+Inputs: {"a":1375,"b":130,"c":70,"d":65,"e":95,"f":275,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2010
+[FAIL] Row 390: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 421: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 425: Bottom Bar (X-X)
+Expected: 1946, Got: 1970
+Inputs: {"a":1375,"b":130,"c":70,"d":65,"e":95,"f":275,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2010
+[FAIL] Row 434: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 458: Bottom Bar (X-X)
+Expected: 2471, Got: 2495
+Inputs: {"a":1800,"b":130,"c":70,"d":65,"e":95,"f":375,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2535
+[FAIL] Row 463: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 520: Bottom Bar (X-X)
+Expected: 1406, Got: 1438
+Inputs: {"a":1020,"b":260,"c":95,"d":95,"e":null,"f":null,"lap":null}
+Debug: Bends=2, Dia=16, Sum=1470
+[FAIL] Row 530: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 537: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 549: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+Checking Sheet: 21st Floor
+[FAIL] Row 0: Bottom Bar (X-X)
+Expected: 4596, Got: 4620
+Inputs: {"a":3160,"b":260,"c":260,"d":65,"e":65,"f":850,"lap":null}
+Debug: Bends=4, Dia=8, Sum=4660
+[FAIL] Row 48: Bottom Bar (X-X)
+Expected: 3901, Got: 3925
+Inputs: {"a":2365,"b":260,"c":260,"d":65,"e":65,"f":950,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3965
+[FAIL] Row 60: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 78: Bottom Bar (X-X)
+Expected: 2341, Got: 2365
+Inputs: {"a":1375,"b":140,"c":260,"d":65,"e":65,"f":500,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2405
+[FAIL] Row 83: Bottom & Top Bar (Y-Y)
+Expected: 1040, Got: 1037
+Inputs: {"a":617,"b":130,"c":95,"d":130,"e":null,"f":null,"lap":null}
+Debug: Bends=4, Dia=8, Sum=972
+[FAIL] Row 96: Bottom Bar (X-X)
+Expected: 4566, Got: 4590
+Inputs: {"a":3100,"b":140,"c":260,"d":65,"e":65,"f":1000,"lap":null}
+Debug: Bends=4, Dia=8, Sum=4630
+[FAIL] Row 100: Bottom Bar (X-X)
+Expected: 4616, Got: 4640
+Inputs: {"a":3100,"b":260,"c":140,"d":65,"e":65,"f":1050,"lap":null}
+Debug: Bends=4, Dia=8, Sum=4680
+[FAIL] Row 151: Bottom Bar (X-X)
+Expected: 3736, Got: 3760
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":700,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3800
+[FAIL] Row 171: Bottom Bar (X-X)
+Expected: 2341, Got: 2365
+Inputs: {"a":1375,"b":260,"c":140,"d":65,"e":65,"f":500,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2405
+[FAIL] Row 180: Bottom Bar (X-X)
+Expected: 3761, Got: 3785
+Inputs: {"a":2275,"b":260,"c":260,"d":65,"e":65,"f":900,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3825
+[FAIL] Row 190: Bottom Bar (X-X)
+Expected: 3191, Got: 3215
+Inputs: {"a":1975,"b":260,"c":140,"d":65,"e":65,"f":750,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3255
+[FAIL] Row 194: Bottom Bar (X-X)
+Expected: 3161, Got: 3185
+Inputs: {"a":1825,"b":260,"c":260,"d":65,"e":65,"f":750,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3225
+[FAIL] Row 247: Bottom Bar (Y-Y)
+Expected: 3311, Got: 2990
+Inputs: {"a":2275,"b":260,"c":260,"d":65,"e":65,"f":450,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3375
+[FAIL] Row 251: Bottom & Top Bar (Y-Y)
+Expected: 2320, Got: 2317
+Inputs: {"a":1932,"b":130,"c":95,"d":95,"e":null,"f":null,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2252
+[FAIL] Row 252: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 256: Bottom Bar (X-X)
+Expected: 1946, Got: 1970
+Inputs: {"a":1375,"b":130,"c":70,"d":65,"e":95,"f":275,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2010
+[FAIL] Row 280: Bottom Bar (X-X)
+Expected: 2471, Got: 2495
+Inputs: {"a":1800,"b":130,"c":70,"d":65,"e":95,"f":375,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2535
+[FAIL] Row 285: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 342: Bottom Bar (X-X)
+Expected: 1406, Got: 1438
+Inputs: {"a":1020,"b":260,"c":95,"d":95,"e":null,"f":null,"lap":null}
+Debug: Bends=2, Dia=16, Sum=1470
+[FAIL] Row 352: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 356: Bottom Bar (X-X)
+Expected: 2471, Got: 2495
+Inputs: {"a":1800,"b":130,"c":70,"d":65,"e":95,"f":375,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2535
+[FAIL] Row 365: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 385: Bottom Bar (X-X)
+Expected: 1946, Got: 1970
+Inputs: {"a":1375,"b":130,"c":70,"d":65,"e":95,"f":275,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2010
+[FAIL] Row 390: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 421: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 425: Bottom Bar (X-X)
+Expected: 1946, Got: 1970
+Inputs: {"a":1375,"b":130,"c":70,"d":65,"e":95,"f":275,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2010
+[FAIL] Row 434: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 458: Bottom Bar (X-X)
+Expected: 2471, Got: 2495
+Inputs: {"a":1800,"b":130,"c":70,"d":65,"e":95,"f":375,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2535
+[FAIL] Row 463: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 520: Bottom Bar (X-X)
+Expected: 1406, Got: 1438
+Inputs: {"a":1020,"b":260,"c":95,"d":95,"e":null,"f":null,"lap":null}
+Debug: Bends=2, Dia=16, Sum=1470
+[FAIL] Row 530: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 537: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 549: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+Checking Sheet: Terrace
+[FAIL] Row 0: Bottom Bar (X-X)
+Expected: 4596, Got: 4620
+Inputs: {"a":3160,"b":260,"c":260,"d":65,"e":65,"f":850,"lap":null}
+Debug: Bends=4, Dia=8, Sum=4660
+[FAIL] Row 60: Bottom Bar (X-X)
+Expected: 3901, Got: 3925
+Inputs: {"a":2365,"b":260,"c":260,"d":65,"e":65,"f":950,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3965
+[FAIL] Row 72: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 91: Bottom Bar (X-X)
+Expected: 2341, Got: 2365
+Inputs: {"a":1375,"b":140,"c":260,"d":65,"e":65,"f":500,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2405
+[FAIL] Row 95: Top MainBar (Y-Y) - B3 to B4
+Expected: 1325, Got: 1327
+Inputs: {"a":450,"b":160,"c":587,"d":null,"e":95,"f":null,"lap":null}
+Debug: Bends=2, Dia=8, Sum=1292
+[FAIL] Row 98: Bottom Bar (Y-Y)
+Expected: 1040, Got: 1037
+Inputs: {"a":617,"b":130,"c":95,"d":130,"e":null,"f":null,"lap":null}
+Debug: Bends=4, Dia=8, Sum=972
+[FAIL] Row 112: Bottom Bar (X-X)
+Expected: 4566, Got: 4590
+Inputs: {"a":3100,"b":140,"c":260,"d":65,"e":65,"f":1000,"lap":null}
+Debug: Bends=4, Dia=8, Sum=4630
+[FAIL] Row 119: Bottom Bar (X-X)
+Expected: 4616, Got: 4640
+Inputs: {"a":3100,"b":260,"c":140,"d":65,"e":65,"f":1050,"lap":null}
+Debug: Bends=4, Dia=8, Sum=4680
+[FAIL] Row 175: Bottom Bar (X-X)
+Expected: 3736, Got: 3760
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":700,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3800
+[FAIL] Row 201: Bottom Bar (X-X)
+Expected: 2341, Got: 2365
+Inputs: {"a":1375,"b":260,"c":140,"d":65,"e":65,"f":500,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2405
+[FAIL] Row 210: Bottom Bar (X-X)
+Expected: 3761, Got: 3785
+Inputs: {"a":2275,"b":260,"c":260,"d":65,"e":65,"f":900,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3825
+[FAIL] Row 224: Bottom Bar (X-X)
+Expected: 3191, Got: 3215
+Inputs: {"a":1975,"b":260,"c":140,"d":65,"e":65,"f":750,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3255
+[FAIL] Row 229: Bottom Bar (X-X)
+Expected: 3161, Got: 3185
+Inputs: {"a":1825,"b":260,"c":260,"d":65,"e":65,"f":750,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3225
+[FAIL] Row 281: Bottom Bar (Y-Y)
+Expected: 3311, Got: 2990
+Inputs: {"a":2275,"b":260,"c":260,"d":65,"e":65,"f":450,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3375
+[FAIL] Row 288: Bottom & Top Bar (Y-Y)
+Expected: 2320, Got: 2317
+Inputs: {"a":1932,"b":130,"c":95,"d":95,"e":null,"f":null,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2252
+[FAIL] Row 289: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 298: Bottom Bar (X-X)
+Expected: 1946, Got: 1970
+Inputs: {"a":1375,"b":130,"c":70,"d":65,"e":95,"f":275,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2010
+[FAIL] Row 326: Bottom Bar (X-X)
+Expected: 2471, Got: 2495
+Inputs: {"a":1800,"b":130,"c":70,"d":65,"e":95,"f":375,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2535
+[FAIL] Row 332: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 400: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 405: Bottom Bar (X-X)
+Expected: 2471, Got: 2495
+Inputs: {"a":1800,"b":130,"c":70,"d":65,"e":95,"f":375,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2535
+[FAIL] Row 411: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 431: Bottom Bar (X-X)
+Expected: 1946, Got: 1970
+Inputs: {"a":1375,"b":130,"c":70,"d":65,"e":95,"f":275,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2010
+[FAIL] Row 437: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 464: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 471: Bottom Bar (X-X)
+Expected: 1946, Got: 1970
+Inputs: {"a":1375,"b":130,"c":70,"d":65,"e":95,"f":275,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2010
+[FAIL] Row 480: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 505: Bottom Bar (X-X)
+Expected: 2471, Got: 2495
+Inputs: {"a":1800,"b":130,"c":70,"d":65,"e":95,"f":375,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2535
+[FAIL] Row 511: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 577: Bottom Bar (X-X)
+Expected: 3836, Got: 3860
+Inputs: {"a":2450,"b":260,"c":260,"d":65,"e":65,"f":800,"lap":null}
+Debug: Bends=4, Dia=8, Sum=3900
+[FAIL] Row 584: Top Bar Main (Y-Y) Q1 to Q2
+Expected: 2343, Got: 2440
+Inputs: {"a":1275,"b":160,"c":750,"d":95,"e":95,"f":null,"lap":null}
+Debug: Bends=2, Dia=8, Sum=2375
+[FAIL] Row 585: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 598: Bottom Bar (X-X)
+Expected: 2511, Got: 2535
+Inputs: {"a":1375,"b":260,"c":260,"d":65,"e":65,"f":550,"lap":null}
+Debug: Bends=4, Dia=8, Sum=2575
+[FAIL] Row 603: Top Bar Main (Y-Y) Q5 to Q7
+Expected: 3453, Got: 3550
+Inputs: {"a":2385,"b":160,"c":750,"d":95,"e":95,"f":null,"lap":null}
+Debug: Bends=2, Dia=8, Sum=3485
+
+=========================================
+Total Passed: 1678
+Total Failed: 100
+Accuracy: 94.38%
+=========================================

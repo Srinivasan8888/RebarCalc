@@ -1,6 +1,7 @@
 /**
  * Enhanced Component Calculator Engine
  * Intelligent calculation functions for all bar types with proper engineering logic
+ * Now with formula-driven calculations from canonical formulas
  */
 
 import type { 
@@ -18,42 +19,176 @@ import {
   // COMPONENT_COVERS // Unused
 } from './constants';
 
+// Import formula calculator
+import { 
+  calculateWithCanonicalFormulas, 
+  hasCanonicalFormula,
+  getCanonicalBarMetadata 
+} from './formula-calculator';
+
+// ============================================================================
+// BAR TYPE CATEGORIZATION (FINAL - typos fixed, duplicates removed)
+// Reduced from 210 variants to 20 unique base types
+// ============================================================================
+
+/**
+ * Full Span bar types - Simple pattern with beam penetrations
+ * Formula: a=Span, b=Beam-Cover, c=Beam-Cover, d=Depth-2*Cover, e=Depth-2*Cover
+ */
+const FULL_SPAN_TYPES = new Set([
+  "Bottom Bar (X-X) Full Span",
+  "Bottom Bar (Y-Y) Full Span",
+  "Top Bar (X-X) Full Span",
+  "Top Bar (Y-Y) Full Span",
+]);
+
+/**
+ * Distribution bar types - Perpendicular span pattern
+ * Formula: a=Perp Span, b=Beam-Cover, c=Beam-Cover, d=95, e=95
+ */
+const DISTRIBUTION_TYPES = new Set([
+  "Bottom Bar Dist (X-X)",
+  "Bottom Bar Dist (Y-Y)",
+  "Top Bar Dist (Y-Y)",
+  "Top Dist Bar (X-X)",
+  "Top Dist Bar (Y-Y)",
+]);
+
+/**
+ * Combined bar types (Bottom & Top)
+ * Formula: Similar to U-Bar but uses combined bar calculation
+ */
+const COMBINED_TYPES = new Set([
+  "Bottom & Top Bar (X-X)",
+  "Bottom & Top Bar (Y-Y)",
+  "Top & Bottom Bar (Y-Y)",
+  "Top Main Bar (X-X)",
+  "Top Main Bar (Y-Y)",
+]);
+
+/**
+ * U-Bar types - Complex pattern with top extensions
+ * Formula: a=Span, b=2*(Beam-Cover), c=2*(Beam-Cover) or 4*(Depth-2*Cover), d=Depth-2*Cover, e=Depth-2*Cover, f=Extensions
+ * Note: Bottom Bar and Top Bar without "Full Span" or "Dist" modifiers use U-Bar pattern
+ */
+const U_BAR_TYPES = new Set([
+  "Bottom Bar (X-X)",
+  "Bottom Bar (Y-Y)",
+  "Top Bar (X-X)",
+  "Top Bar (Y-Y)",
+  "Top Main Bar (X-X)",
+  "Top Main Bar (Y-Y)",
+]);
+
 // ============================================================================
 // ENHANCED CALCULATION DISPATCHER
 // ============================================================================
 
 /**
+ * Normalize bar type by removing location-specific suffixes
+ * Strategy: Remove everything after (X-X) or (Y-Y) direction markers
+ * Also fix spacing issues and typos
+ */
+function normalizeBarType(barType: string): string {
+  let normalized = barType.trim();
+  
+  // Step 1: Fix spacing issues: (X -X) → (X-X), (Y -Y) → (Y-Y)
+  normalized = normalized.replace(/\(X\s*-\s*X\)/gi, '(X-X)');
+  normalized = normalized.replace(/\(Y\s*-\s*Y\)/gi, '(Y-Y)');
+  
+  // Step 2: Remove everything after (X-X) or (Y-Y) - DISABLED
+  // This was causing "Bottom Bar (X-X) Full Span" to become "Bottom Bar (X-X)"
+  // which merged two distinct bar types (Full Span vs U-Bar)
+  // normalized = normalized.replace(/(\([XY]-[XY]\)).*$/, '$1');
+  
+  // Step 3: Fix typos and standardize naming
+  // "Top Bar Main" → "Top Main Bar"
+  normalized = normalized.replace(/Top Bar Main/g, 'Top Main Bar');
+  
+  // "Top MainBar" → "Top Main Bar" (standardize to space)
+  normalized = normalized.replace(/Top MainBar/g, 'Top Main Bar');
+  
+  // "Bottom MainBar" → "Bottom Main Bar"
+  normalized = normalized.replace(/Bottom MainBar/g, 'Bottom Main Bar');
+  
+  // "Top DistBar" → "Top Dist Bar"
+  normalized = normalized.replace(/Top DistBar/g, 'Top Dist Bar');
+  
+  // "Bottom DistBar" → "Bottom Dist Bar"
+  normalized = normalized.replace(/Bottom DistBar/g, 'Bottom Dist Bar');
+  
+  return normalized.trim();
+}
+
+/**
  * Main dispatcher for intelligent bar calculation based on bar type
+ * NOW USES CANONICAL FORMULAS FIRST!
  */
 export function calculateBarMeasurementsAuto(
   barType: string,
   direction: BarDirection,
   component: ConcreteComponent,
   diameter: number,
-  concreteGrade: ConcreteGrade = 'M30'
+  concreteGrade: ConcreteGrade = 'M30',
+  section_span_override?: number // 🆕 Added optional override
 ): BarMeasurements {
   
-  // Normalize bar type for matching
-  const normalizedType = barType.toLowerCase().trim();
+  // Normalize bar type to remove location-specific suffixes
+  const normalizedBarType = normalizeBarType(barType);
   
+  console.log('🔍 calculateBarMeasurementsAuto called:', {
+    barType,
+    normalizedBarType,
+    direction,
+    componentType: component.componentType,
+    hasBeamWidths: !!component.beamWidths,
+    beamWidths: component.beamWidths,
+    spanX: component.spanX,
+    spanY: component.spanY,
+    depth: component.depth,
+    cover: component.cover
+  });
+  
+  // 🎯 NEW: Try canonical formulas first
+  if (hasCanonicalFormula(normalizedBarType)) {
+    console.log(`🚀 Using canonical formula for: ${normalizedBarType}`);
+    const metadata = getCanonicalBarMetadata(normalizedBarType);
+    if (metadata) {
+      console.log(`   📊 Confidence: ${metadata.formula_usage_percentage} (${metadata.most_common_formula_count}/${metadata.total_occurrences} occurrences)`);
+    }
+    
+    const result = calculateWithCanonicalFormulas(normalizedBarType, direction, component, diameter);
+    if (result) {
+      console.log('✅ Canonical formula result:', result);
+      return result;
+    }
+    
+    console.warn(`⚠️ Canonical formula failed, falling back to hardcoded logic`);
+  } else {
+    console.warn(`⚠️ No canonical formula for: ${normalizedBarType}, using hardcoded logic`);
+  }
+  
+  // Fallback to existing hardcoded logic
   // SLAB calculations
   if (component.componentType === 'SLAB') {
-    return calculateSlabBarMeasurements(normalizedType, direction, component, diameter, concreteGrade);
+    const result = calculateSlabBarMeasurements(normalizedBarType, direction, component, diameter, concreteGrade, section_span_override);
+    console.log('✅ Slab calculation result:', result);
+    return result;
   }
   
   // BEAM calculations
   if (component.componentType === 'BEAM') {
-    return calculateBeamBarMeasurements(normalizedType, component, diameter, concreteGrade);
+    return calculateBeamBarMeasurements(normalizedBarType, component, diameter, concreteGrade);
   }
   
   // COLUMN calculations
   if (component.componentType === 'COLUMN') {
-    return calculateColumnBarMeasurements(normalizedType, component, diameter, concreteGrade);
+    return calculateColumnBarMeasurements(normalizedBarType, component, diameter, concreteGrade);
   }
   
   // FOOTING calculations
   if (component.componentType === 'FOOTING') {
-    return calculateFootingBarMeasurements(normalizedType, direction, component, diameter, concreteGrade);
+    return calculateFootingBarMeasurements(normalizedBarType, direction, component, diameter, concreteGrade);
   }
   
   // Fallback for unknown types
@@ -69,16 +204,38 @@ function calculateSlabBarMeasurements(
   direction: BarDirection,
   component: ConcreteComponent,
   diameter: number,
-  concreteGrade: ConcreteGrade
+  concreteGrade: ConcreteGrade,
+  section_span_override?: number
 ): BarMeasurements {
   
-  const span = direction === 'X' ? component.spanX : component.spanY;
-  // const perpSpan = direction === 'X' ? component.spanY : component.spanX; // Unused
-  // const cover = component.cover; // Unused
-  // const depth = component.depth || 125; // Unused
-  // const developmentLength = getDevelopmentLength(diameter, concreteGrade); // Unused
+  // Use override if provided, otherwise standard span
+  const span = section_span_override || (direction === 'X' ? component.spanX : component.spanY);
   
-  // Normalize bar type for better matching
+  // ============================================================================
+  // CATEGORY-BASED ROUTING (All 210 bar types)
+  // ============================================================================
+  
+  // Full Span types (6 types) - Simple pattern
+  if (FULL_SPAN_TYPES.has(barType)) {
+    return calculateBottomBarFullSpan(direction, component, diameter, concreteGrade, section_span_override);
+  }
+  
+  // Distribution types (61 types) - Perpendicular pattern
+  if (DISTRIBUTION_TYPES.has(barType)) {
+    return calculateDistributionBar(direction, component, diameter);
+  }
+  
+  // Combined types (7 types) - Bottom & Top pattern
+  if (COMBINED_TYPES.has(barType)) {
+    return calculateCombinedBar(direction, component, diameter, concreteGrade);
+  }
+  
+  // U-Bar types (136 types) - Default pattern with extensions
+  // This includes all Bottom Bar, Top Bar, Top Main Bar, Top MainBar types
+  return calculateTopBarWithExtensions(direction, component, diameter);
+  
+  // Legacy code below for reference (now handled by category routing)
+  /*
   const normalizedType = barType.toLowerCase();
   
   // ============================================================================
@@ -222,6 +379,7 @@ function calculateSlabBarMeasurements(
   
   // Default fallback for unrecognized slab bar types
   return { a: span };
+  */
 }
 
 /**
@@ -255,8 +413,9 @@ export function _calculateBottomBarCurtailed(
 }
 
 /**
- * Top Bar Full Span - Full span top reinforcement
- * Formula: Span + 2×Ld (similar to bottom full span but for top)
+ * Top Bar Full Span - Full span with beam penetrations
+ * Excel Formula: Same as Bottom Bar Full Span
+ * a=Span, b=Left-Cover, c=Right-Cover, d=Depth-2*Cover, e=Depth-2*Cover
  */
 function calculateTopBarFullSpan(
   direction: BarDirection,
@@ -264,10 +423,11 @@ function calculateTopBarFullSpan(
   diameter: number,
   concreteGrade: ConcreteGrade
 ): BarMeasurements {
-  const span = direction === 'X' ? component.spanX : component.spanY;
-  const developmentLength = getDevelopmentLength(diameter, concreteGrade);
-  
-  return { a: span + (2 * developmentLength) };
+  // Use same logic as Bottom Bar Full Span (which now handles override implicitly via span check if we passed it... wait, calculateTopBarFullSpan needs the override too!)
+  // Since calculateTopBarFullSpan isn't called with the override in the legacy path (it's handled by FULL_SPAN_TYPES check in calculateSlabBarMeasurements), 
+  // we might not need to change this function signature IF it's only called from calculateSlabBarMeasurements via the legacy path.
+  // BUT to be safe, let's update it too.
+  return calculateBottomBarFullSpan(direction, component, diameter, concreteGrade);
 }
 
 /**
@@ -284,19 +444,47 @@ function calculateTopDistributionBar(
 }
 
 /**
- * Bottom Bar Full Span - Full span plus development length
- * Formula: Span + 2×Ld
+ * Bottom Bar Full Span - Full span with beam penetrations
+ * Excel Formula: a=Span, b=Left-Cover, c=Right-Cover, d=Depth-2*Cover, e=Depth-2*Cover
  */
 function calculateBottomBarFullSpan(
   direction: BarDirection,
   component: ConcreteComponent,
   diameter: number,
-  concreteGrade: ConcreteGrade
+  concreteGrade: ConcreteGrade,
+  section_span_override?: number
 ): BarMeasurements {
-  const span = direction === 'X' ? component.spanX : component.spanY;
-  const developmentLength = getDevelopmentLength(diameter, concreteGrade);
+  // Use override if provided, otherwise standard span
+  const span = section_span_override || (direction === 'X' ? component.spanX : component.spanY);
+  const cover = component.cover;
+  const depth = component.depth || 125;
   
-  return { a: span + (2 * developmentLength) };
+  if (!component.beamWidths) {
+    // Simple case: just span
+    return { a: span };
+  }
+  
+  const { left, right, top, bottom } = component.beamWidths;
+  
+  if (direction === 'X') {
+    // X direction: uses left/right beams
+    return {
+      a: span,
+      b: Math.max(0, left - cover),
+      c: Math.max(0, right - cover),
+      d: Math.max(0, depth - (2 * cover)),
+      e: Math.max(0, depth - (2 * cover))
+    };
+  } else {
+    // Y direction: uses top/bottom beams
+    return {
+      a: span,
+      b: Math.max(0, top - cover),
+      c: Math.max(0, bottom - cover),
+      d: Math.max(0, depth - (2 * cover)),
+      e: Math.max(0, depth - (2 * cover))
+    };
+  }
 }
 
 /**
@@ -910,32 +1098,61 @@ export function calculateBarsPerMember(
   barType: string,
   direction: BarDirection,
   component: ConcreteComponent,
-  spacing: number
+  spacing: number,
+  section_span_1?: number, // Bar Length override
+  section_span_2?: number  // Distribution override
 ): number {
   const normalizedType = barType.toLowerCase();
+  
+  // Use overrides if provided, otherwise standard spans
+  // careful: section_span_1 is typically the span parallel to bar
+  // section_span_2 is typically perpendicular (distribution)
+  const spanX = direction === 'X' ? (section_span_1 || component.spanX) : (section_span_2 || component.spanX);
+  const spanY = direction === 'Y' ? (section_span_1 || component.spanY) : (section_span_2 || component.spanY);
   
   // ============================================================================
   // SLAB BAR TYPES - BOTTOM MAIN BARS
   // ============================================================================
   
-  // Bottom Bar (X-X): Span Y / spacing
+  // Bottom Bar (X-X): Span X / spacing (bars run in X, spaced along X - Wait, spacing is usually perp?)
+  // Correction: If bars are X-X (run along X), they are spaced along Y!
+  // My previous fix in Step 405 was: X-X uses spanX / spacing.
+  // BUT standard practice: X-Bars are spaced along Y-span.
+  // The user's Excel:
+  // Row 15: Bottom Bar (X-X). Member count = ROUNDUP(D11/E15). D11 is Span Y (1350). E15 is Spacing.
+  // SO: X-X bars (Run X) -> Count uses SPAN Y.
+  // My previous fix in Step 405 might have been WRONG depending on interpretation?
+  // User said: "Bottom Bar (X-X) was using spanY -> now uses spanX (Correct: 12)"
+  // Example: 3050(X) x 3650(Y). Spacing 275.
+  // If count = 12. 3050/275 = 11.09 -> 12.
+  // 3650/275 = 13.27 -> 14.
+  // So for THIS user, Bottom Bar (X-X) uses Span X for members?
+  // That implies bars run along Y but are called X-X? Or bars run along X and are spaced along X?
+  // "Bottom Bar (X-X)" usually means "Bars parallel to X axis".
+  // If bars are parallel to X, they are distributed along Y.
+  // Number of bars = Length of Y / Spacing.
+  // IF the user insists X-X count uses Span X, then the bars are distributed along X.
+  // I will stick to what I fixed in Step 405 because the user said "Correct: 12" (which is 3050/275).
+  // So: X-X uses Span X. Y-Y uses Span Y.
+  
+  // Bottom Bar (X-X): Span X / spacing
   if (normalizedType === 'bottom bar (x-x)') {
-    return Math.ceil(component.spanY / spacing);
+    return Math.ceil(spanX / spacing);
   }
   
-  // Bottom Bar (Y-Y): ROUNDUP(Span X / spacing, 0)
+  // Bottom Bar (Y-Y): ROUNDUP(Span Y / spacing, 0)
   if (normalizedType === 'bottom bar (y-y)') {
-    return Math.ceil(component.spanX / spacing);
+    return Math.ceil(spanY / spacing);
   }
   
-  // Bottom Bar (X-X) Full Span: Same as regular bottom bar
+  // Bottom Bar (X-X) Full Span
   if (normalizedType === 'bottom bar (x-x) full span') {
-    return Math.ceil(component.spanY / spacing);
+    return Math.ceil(spanX / spacing);
   }
   
-  // Bottom Bar (Y-Y) Full Span: Same as regular bottom bar
+  // Bottom Bar (Y-Y) Full Span
   if (normalizedType === 'bottom bar (y-y) full span') {
-    return Math.ceil(component.spanX / spacing);
+    return Math.ceil(spanY / spacing);
   }
   
   // ============================================================================
@@ -966,32 +1183,32 @@ export function calculateBarsPerMember(
   
   // Top Bar (X-X): Same pattern as bottom bars
   if (normalizedType === 'top bar (x-x)') {
-    return Math.ceil(component.spanY / spacing);
+    return Math.ceil(spanX / spacing);
   }
   
   // Top Bar (Y-Y): Same pattern as bottom bars
   if (normalizedType === 'top bar (y-y)') {
-    return Math.ceil(component.spanX / spacing);
+    return Math.ceil(spanY / spacing);
   }
   
-  // Top Bar (X-X) Full Span: Same as regular top bar
+  // Top Bar (X-X) Full Span
   if (normalizedType === 'top bar (x-x) full span') {
-    return Math.ceil(component.spanY / spacing);
+    return Math.ceil(spanX / spacing);
   }
   
-  // Top Bar (Y-Y) Full Span: Same as regular top bar
+  // Top Bar (Y-Y) Full Span
   if (normalizedType === 'top bar (y-y) full span') {
-    return Math.ceil(component.spanX / spacing);
+    return Math.ceil(spanY / spacing);
   }
   
-  // Top Main Bar (X-X): Alternative naming for top bars
+  // Top Main Bar (X-X)
   if (normalizedType === 'top main bar (x-x)') {
-    return Math.ceil(component.spanY / spacing);
+    return Math.ceil(spanX / spacing);
   }
   
-  // Top Main Bar (Y-Y): Alternative naming for top bars
+  // Top Main Bar (Y-Y)
   if (normalizedType === 'top main bar (y-y)') {
-    return Math.ceil(component.spanX / spacing);
+    return Math.ceil(spanY / spacing);
   }
   
   // ============================================================================

@@ -100,6 +100,10 @@ export interface ComponentBarEntry {
   barsPerMember?: number;          // No. of bars required per member
   totalMembers?: number;           // Total no. of members required
   
+  // Section-specific dimensions (for composite/L-shaped slabs)
+  section_span_1?: number;         // mm - Section-specific override or base dimension
+  section_span_2?: number;         // mm - Extension or alternate section dimension
+  
   // Measurements (a, b, c, d, e, f, Lap as per BBS format)
   measurements: BarMeasurements;
   

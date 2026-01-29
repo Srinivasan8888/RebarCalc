@@ -24,7 +24,10 @@ import {
 
 
 import { 
-  calculateComponentBarEntryEnhanced, 
+  calculateComponentBarEntry,
+  calculateNumberOfBars
+} from '@/lib/component-calculator';
+import { 
   calculateProjectTotal, 
   calculateBarMeasurementsAuto,
   calculateBarsPerMember,
@@ -83,6 +86,37 @@ export function BBSSpreadsheetView({
     const updated = components.map(c => 
       c.id === id ? { ...c, ...updates } : c
     );
+    
+    // If dimensions changed, recalculate all bar measurements for this component
+    const dimensionFields = ['spanX', 'spanY', 'depth', 'cover', 'beamWidths', 'topExtensions'];
+    const dimensionsChanged = Object.keys(updates).some(key => dimensionFields.includes(key));
+    
+    if (dimensionsChanged) {
+      const component = updated.find(c => c.id === id);
+      if (component && component.componentType === 'SLAB' && component.beamWidths && component.topExtensions) {
+        // Recalculate measurements for all bars in this component
+        const recalculated = updated.map(c => {
+          if (c.id === id) {
+            const updatedBars = c.bars.map(bar => {
+              const newMeasurements = calculateBarMeasurementsAuto(
+                bar.barType,
+                bar.direction,
+                component,
+                bar.diameter,
+                metadata?.concreteGrade || 'M30',
+                bar.section_span_1 // Pass existing section span override
+              );
+              return { ...bar, measurements: newMeasurements };
+            });
+            return { ...c, bars: updatedBars };
+          }
+          return c;
+        });
+        recalculateAll(recalculated);
+        return;
+      }
+    }
+    
     // Re-calculate bars if relevant fields changed
     recalculateAll(updated);
   };
@@ -149,8 +183,8 @@ export function BBSSpreadsheetView({
       }
     }
     
-    // If direction or bar type changed, auto-recalculate measurements using enhanced calculator
-    if ((updates.direction || updates.barType) && 
+    // If direction, bar type, OR section spans changed, auto-recalculate measurements
+    if ((updates.direction || updates.barType || updates.section_span_1 !== undefined || updates.section_span_2 !== undefined) && 
         component?.componentType === 'SLAB' && 
         component.beamWidths && 
         component.topExtensions &&
@@ -159,13 +193,18 @@ export function BBSSpreadsheetView({
        const newDirection = finalUpdates.direction || targetBar.direction;
        const newBarType = updates.barType || targetBar.barType;
        const diameter = updates.diameter || targetBar.diameter;
+       // Use new section spans if provided
+       const newSectionSpan1 = updates.section_span_1 !== undefined ? updates.section_span_1 : targetBar.section_span_1;
+       const newSectionSpan2 = updates.section_span_2 !== undefined ? updates.section_span_2 : targetBar.section_span_2;
        
        const newMeasurements = calculateBarMeasurementsAuto(
          newBarType,
          newDirection,
          component,
          diameter,
-         metadata?.concreteGrade || 'M30'
+         metadata?.concreteGrade || 'M30',
+         newSectionSpan1,
+         newSectionSpan2
        );
        
        finalUpdates = { ...finalUpdates, measurements: newMeasurements };
@@ -181,6 +220,26 @@ export function BBSSpreadsheetView({
       return c;
     });
     recalculateAll(updatedComponents);
+  };
+  
+  const recalculateBarMeasurements = (componentId: string, barId: string) => {
+    const component = components.find(c => c.id === componentId);
+    const targetBar = component?.bars.find(b => b.id === barId);
+    
+    if (!component || !targetBar) return;
+    
+    // Only recalculate if we have beam widths and top extensions
+    if (component.componentType === 'SLAB' && component.beamWidths && component.topExtensions) {
+      const newMeasurements = calculateBarMeasurementsAuto(
+        targetBar.barType,
+        targetBar.direction,
+        component,
+        targetBar.diameter,
+        metadata?.concreteGrade || 'M30'
+      );
+      
+      updateBarEntry(componentId, barId, { measurements: newMeasurements });
+    }
   };
   
   const updateBarMeasurements = (componentId: string, barId: string, field: keyof BarMeasurements, value: number) => {
@@ -212,16 +271,57 @@ export function BBSSpreadsheetView({
     recalculateAll(updatedComponents);
   };
 
+  const recalculateComponentMeasurements = (componentId: string) => {
+    const component = components.find(c => c.id === componentId);
+    if (!component || component.componentType !== 'SLAB' || !component.beamWidths || !component.topExtensions) {
+      return;
+    }
+
+    const updatedComponents = components.map(c => {
+      if (c.id === componentId) {
+        const updatedBars = c.bars.map(bar => {
+          const newMeasurements = calculateBarMeasurementsAuto(
+            bar.barType,
+            bar.direction,
+            component,
+            bar.diameter,
+            metadata?.concreteGrade || 'M30'
+          );
+          return { ...bar, measurements: newMeasurements };
+        });
+        return { ...c, bars: updatedBars };
+      }
+      return c;
+    });
+    recalculateAll(updatedComponents);
+  };
+
   // Main calculation trigger
   const recalculateAll = (comps: ConcreteComponent[]) => {
+    
+    // Prepare settings from metadata
+    const settings = {
+        developmentLengths: metadata?.developmentLengths || DEVELOPMENT_LENGTH_TABLES['M30'], // Default or User Config matches Excel
+        standardBarLength: metadata?.standardBarLength || 12000
+    };
+
     const calculated = comps.map(comp => {
+      // Determine relevant span for "No of Bars" calculation
+      // For bars along X (direction X), spacing is along Y -> use Span Y
+      // For bars along Y (direction Y), spacing is along X -> use Span X
+      
       const bars = comp.bars.map(bar => {
+        // Find Component Span relevant for this bar
+        const componentSpan = bar.direction === 'X' ? comp.spanY : comp.spanX;
+        
         return {
           ...bar,
-          calculated: calculateComponentBarEntryEnhanced(
+          calculated: calculateComponentBarEntry(
             bar, 
-            comp,
-            metadata?.concreteGrade || 'M30'
+            componentSpan,
+            comp.cover,
+            settings,
+            comp.componentType === 'SLAB' // simplified check for U-Bar logic activation if needed
           )
         };
       });
@@ -330,11 +430,14 @@ export function BBSSpreadsheetView({
                <TableHead className="w-[50px]">S.No</TableHead>
                <TableHead className="w-[200px]">Bar Type / Component</TableHead>
                <TableHead className="w-[120px] text-center">Span (X/Y)</TableHead>
-               <TableHead className="w-[80px] text-center">Spc (mm)</TableHead>
-               <TableHead className="w-[60px] text-center">Dia</TableHead>
-               <TableHead className="w-[80px] text-center">No. of bars Reqd per member</TableHead>
-               <TableHead className="w-[80px] text-center">Total no. of members Reqd</TableHead>
+               {/* Fixed Headers - Removed Redundant 'Bar Type & Direction', 'Member Span' */}
+               
+               <TableHead className="w-[80px] text-center">Spacing (mm)</TableHead>
+               <TableHead className="w-[80px] text-center">Dia (mm)</TableHead>
+               <TableHead className="w-[80px] text-center">Bars/Memb</TableHead>
+               <TableHead className="w-[80px] text-center">Total Members</TableHead>
                <TableHead className="w-[80px] text-center">Total nos.</TableHead>
+               
                <TableHead className="w-[500px] text-center border-l border-r">
                   <ComponentFormulaTooltip bar={{ barType: 'Bottom Bar (X-X)', direction: 'X', diameter: 8, spacing: 150, measurements: { a: 0 } } as any}>
                     <div className="cursor-help">
@@ -366,7 +469,7 @@ export function BBSSpreadsheetView({
                 {/* Component Header Row */}
                 <TableRow className="bg-muted/20 pointer-events-none group">
                    <TableCell className="font-bold text-center align-top pt-4">{cIndex + 1}</TableCell>
-                   <TableCell className="align-top pt-4 pointer-events-auto" colSpan={11}>
+                   <TableCell className="align-top pt-4 pointer-events-auto" colSpan={13}> {/* Adjusted colSpan */}
                      <div className="flex flex-col gap-4 mb-4">
                        <div className="flex items-center gap-2">
                          <Select 
@@ -594,9 +697,32 @@ export function BBSSpreadsheetView({
                           </div>
                        </div>
                     </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground">
+                    <TableCell className="text-center text-xs">
                         {/* Show relevant span based on direction (opposite span governs quantity) */}
-                        {bar.direction === 'X' ? `Y: ${component.spanY}` : `X: ${component.spanX}`}
+                        <div className="flex flex-col gap-1">
+                          <div className="text-muted-foreground">
+                            {bar.direction === 'X' ? `Y: ${component.spanY}` : `X: ${component.spanX}`}
+                          </div>
+                          {/* Section Span override */}
+                          {/* Section Span 1 (Length) */}
+                           <Input 
+                             type="number"
+                             placeholder="Len"
+                             value={bar.section_span_1 || ''}
+                             onChange={e => updateBarEntry(component.id, bar.id, { section_span_1: parseFloat(e.target.value) || undefined })}
+                             className="h-6 text-xs text-center border bg-background/50 hover:bg-background"
+                             title="Override Length Span (calculations a,b,c...)"
+                           />
+                           {/* Section Span 2 (Dist) */}
+                           <Input 
+                             type="number"
+                             placeholder="Dist"
+                             value={bar.section_span_2 || ''}
+                             onChange={e => updateBarEntry(component.id, bar.id, { section_span_2: parseFloat(e.target.value) || undefined })}
+                             className="h-6 text-xs text-center border bg-background/50 hover:bg-background"
+                             title="Override Distribution Span (calculates Total Members)"
+                           />
+                         </div>
                     </TableCell>
                     <TableCell>
                        <Input 
@@ -608,60 +734,47 @@ export function BBSSpreadsheetView({
                     </TableCell>
                     <TableCell>
                        <Select 
-                         value={bar.diameter.toString()}
+                         value={bar.diameter?.toString() || '8'}
                          onValueChange={v => updateBarEntry(component.id, bar.id, { diameter: parseInt(v) })}
                        >
-                         <SelectTrigger className="h-8 border-0 shadow-none bg-transparent hover:bg-muted/50 justify-center">
+                         <SelectTrigger className="h-8 text-center border-0 bg-transparent hover:bg-muted/50 shadow-none">
                            <SelectValue />
                          </SelectTrigger>
                          <SelectContent>
                            {[8, 10, 12, 16, 20, 25, 32].map(d => (
-                             <SelectItem key={d} value={d.toString()}>{d}</SelectItem>
+                             <SelectItem key={d} value={d.toString()}>{d} mm</SelectItem>
                            ))}
                          </SelectContent>
                        </Select>
                     </TableCell>
-                    
-                    {/* No. of bars Reqd per member (input field, default 1) */}
                     <TableCell>
                        <Input 
                          type="number" 
                          value={bar.barsPerMember || 1} 
                          onChange={e => updateBarEntry(component.id, bar.id, { barsPerMember: parseInt(e.target.value) || 1 })}
-                         className="h-8 text-center border-0 bg-transparent hover:bg-muted/50"
-                         placeholder="1"
+                         className="h-8 text-center border-0 bg-transparent hover:bg-muted/50 w-full"
                        />
                     </TableCell>
+                    
+                    {/* Removed Duplicate Dia and Bars/Memb Cells */}
                     
                     {/* Total no. of members Reqd (calculated based on bar type) */}
                     <TableCell className="text-center">
                        {(() => {
-                         const totalMembers = calculateBarsPerMember(bar.barType, bar.direction, component, bar.spacing);
+                         const totalMembers = calculateBarsPerMember(
+                           bar.barType, 
+                           bar.direction, 
+                           component, 
+                           bar.spacing, 
+                           bar.section_span_1, 
+                           bar.section_span_2
+                         );
                          return (
                            <span 
                              className="font-mono text-primary font-medium cursor-help hover:bg-muted/20 px-1 py-0.5 rounded"
                              title={`Total Members Calculation:
 Bar Type: ${bar.barType}
-${bar.barType.toLowerCase().includes('bottom bar (x-x)') ? `Formula: ROUNDUP(Span Y / Spacing, 0)
-Span Y: ${component.spanY}mm
-Spacing: ${bar.spacing}mm
-Result: ROUNDUP(${component.spanY} / ${bar.spacing}) = ${totalMembers}` :
-bar.barType.toLowerCase().includes('bottom bar dist (x-x)') ? `Formula: ROUNDUP((Top Ext Left + Top Ext Right) / Spacing, 0)
-Top Ext Left: ${component.topExtensions?.left || 0}mm
-Top Ext Right: ${component.topExtensions?.right || 0}mm
-Spacing: ${bar.spacing}mm
-Result: ROUNDUP((${component.topExtensions?.left || 0} + ${component.topExtensions?.right || 0}) / ${bar.spacing}) = ${totalMembers}` :
-bar.barType.toLowerCase().includes('bottom bar (y-y)') ? `Formula: ROUNDUP(Span X / Spacing, 0)
-Span X: ${component.spanX}mm
-Spacing: ${bar.spacing}mm
-Result: ROUNDUP(${component.spanX} / ${bar.spacing}) = ${totalMembers}` :
-bar.barType.toLowerCase().includes('bottom bar dist (y-y)') ? `Formula: ROUNDUP((Top Ext Top + Top Ext Bottom) / Spacing, 0)
-Top Ext Top: ${component.topExtensions?.top || 0}mm
-Top Ext Bottom: ${component.topExtensions?.bottom || 0}mm
-Spacing: ${bar.spacing}mm
-Result: ROUNDUP((${component.topExtensions?.top || 0} + ${component.topExtensions?.bottom || 0}) / ${bar.spacing}) = ${totalMembers}` :
-`Formula: Based on bar type and direction
-Result: ${totalMembers}`}`}
+Result: ${totalMembers}`}
                            >
                              {totalMembers}
                            </span>
@@ -672,7 +785,14 @@ Result: ${totalMembers}`}`}
                     {/* Total nos. (barsPerMember × calculated totalMembers) */}
                     <TableCell className="text-center">
                        {(() => {
-                         const totalMembers = calculateBarsPerMember(bar.barType, bar.direction, component, bar.spacing);
+                         const totalMembers = calculateBarsPerMember(
+                           bar.barType, 
+                           bar.direction, 
+                           component, 
+                           bar.spacing, 
+                           bar.section_span_1, 
+                           bar.section_span_2
+                         );
                          const totalNos = (bar.barsPerMember || 1) * totalMembers;
                          return (
                            <span 

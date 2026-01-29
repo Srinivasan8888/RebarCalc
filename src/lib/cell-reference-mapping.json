@@ -1,0 +1,698 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Rebar Calculation Cell Reference Mapping",
+  "description": "Maps Excel cell references to semantic input names for rebar calculations",
+  "type": "object",
+  "definitions": {
+    "cellMapping": {
+      "type": "object",
+      "properties": {
+        "cellRef": {
+          "type": "string",
+          "description": "Excel cell reference (e.g., C11, D11)"
+        },
+        "inputName": {
+          "type": "string",
+          "description": "Semantic name for the input"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement (e.g., mm, degrees)"
+        },
+        "isCalculated": {
+          "type": "boolean",
+          "description": "Whether this is a calculated value or user input"
+        },
+        "usedIn": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of formulas/calculations that use this value"
+        }
+      },
+      "required": ["cellRef", "inputName", "description"]
+    }
+  },
+  "properties": {
+    "project_inputs": {
+      "type": "object",
+      "description": "Project-level inputs that apply to all calculations",
+      "properties": {
+        "G4": {
+          "$ref": "#/definitions/cellMapping",
+          "default": {
+            "cellRef": "G4",
+            "inputName": "cover",
+            "description": "Concrete cover",
+            "unit": "mm",
+            "isCalculated": false,
+            "usedIn": ["MEAS_A", "MEAS_B", "MEAS_C", "MEAS_D", "MEAS_E"]
+          }
+        }
+      }
+    },
+    "member_dimensions": {
+      "type": "object",
+      "description": "Dimension inputs organized by member/slab",
+      "properties": {
+        "member_11": {
+          "type": "object",
+          "description": "Member at row 11 (first slab configuration)",
+          "properties": {
+            "C11": {
+              "cellRef": "C11",
+              "inputName": "span_x",
+              "description": "Span in X direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "D11": {
+              "cellRef": "D11",
+              "inputName": "span_y",
+              "description": "Span in Y direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "F11": {
+              "cellRef": "F11",
+              "inputName": "slab_depth",
+              "description": "Slab depth/thickness",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_D", "MEAS_E"]
+            },
+            "K11": {
+              "cellRef": "K11",
+              "inputName": "projection_x1",
+              "description": "X-direction projection 1",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "L11": {
+              "cellRef": "L11",
+              "inputName": "projection_x2",
+              "description": "X-direction projection 2",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "M11": {
+              "cellRef": "M11",
+              "inputName": "projection_y1",
+              "description": "Y-direction projection 1",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "N11": {
+              "cellRef": "N11",
+              "inputName": "projection_y2",
+              "description": "Y-direction projection 2",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "C13": {
+              "cellRef": "C13",
+              "inputName": "hook_length_x1",
+              "description": "Hook length in X direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "C14": {
+              "cellRef": "C14",
+              "inputName": "hook_length_x2",
+              "description": "Hook length in X direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_C"]
+            },
+            "D13": {
+              "cellRef": "D13",
+              "inputName": "hook_length_y1",
+              "description": "Hook length in Y direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "D14": {
+              "cellRef": "D14",
+              "inputName": "hook_length_y2",
+              "description": "Hook length in Y direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_C"]
+            }
+          }
+        },
+        "member_20": {
+          "type": "object",
+          "description": "Member at row 20 (second slab configuration)",
+          "properties": {
+            "C20": {
+              "cellRef": "C20",
+              "inputName": "span_x",
+              "description": "Span in X direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "D20": {
+              "cellRef": "D20",
+              "inputName": "span_y",
+              "description": "Span in Y direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "F20": {
+              "cellRef": "F20",
+              "inputName": "slab_depth",
+              "description": "Slab depth/thickness",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_C", "MEAS_D"]
+            },
+            "C22": {
+              "cellRef": "C22",
+              "inputName": "hook_length_x1",
+              "description": "Hook length in X direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "D22": {
+              "cellRef": "D22",
+              "inputName": "hook_length_y1",
+              "description": "Hook length in Y direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "D23": {
+              "cellRef": "D23",
+              "inputName": "additional_hook_y",
+              "description": "Additional hook dimension in Y",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_D"]
+            }
+          }
+        },
+        "member_29": {
+          "type": "object",
+          "description": "Member at row 29 (third slab configuration)",
+          "properties": {
+            "C29": {
+              "cellRef": "C29",
+              "inputName": "span_x",
+              "description": "Span in X direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "D29": {
+              "cellRef": "D29",
+              "inputName": "span_y",
+              "description": "Span in Y direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "F29": {
+              "cellRef": "F29",
+              "inputName": "slab_depth",
+              "description": "Slab depth/thickness",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_D", "MEAS_E"]
+            },
+            "K29": {
+              "cellRef": "K29",
+              "inputName": "projection_x1",
+              "description": "X-direction projection",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "M29": {
+              "cellRef": "M29",
+              "inputName": "projection_y1",
+              "description": "Y-direction projection 1",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "N29": {
+              "cellRef": "N29",
+              "inputName": "projection_y2",
+              "description": "Y-direction projection 2",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "C31": {
+              "cellRef": "C31",
+              "inputName": "hook_length_x1",
+              "description": "Hook length in X direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "D31": {
+              "cellRef": "D31",
+              "inputName": "hook_length_y1",
+              "description": "Hook length in Y direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "C32": {
+              "cellRef": "C32",
+              "inputName": "hook_length_x2",
+              "description": "Hook length in X direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "D32": {
+              "cellRef": "D32",
+              "inputName": "hook_length_y2",
+              "description": "Hook length in Y direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_C"]
+            }
+          }
+        },
+        "member_41": {
+          "type": "object",
+          "description": "Member at row 41 (fourth slab configuration)",
+          "properties": {
+            "C41": {
+              "cellRef": "C41",
+              "inputName": "span_x",
+              "description": "Span in X direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "D41": {
+              "cellRef": "D41",
+              "inputName": "span_y",
+              "description": "Span in Y direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "F41": {
+              "cellRef": "F41",
+              "inputName": "slab_depth",
+              "description": "Slab depth/thickness",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_D", "MEAS_E"]
+            },
+            "K41": {
+              "cellRef": "K41",
+              "inputName": "projection_x1",
+              "description": "X-direction projection",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "M41": {
+              "cellRef": "M41",
+              "inputName": "projection_y1",
+              "description": "Y-direction projection 1",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "N41": {
+              "cellRef": "N41",
+              "inputName": "projection_y2",
+              "description": "Y-direction projection 2",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_F", "TOTAL_MEMBERS"]
+            },
+            "C43": {
+              "cellRef": "C43",
+              "inputName": "hook_length_x1",
+              "description": "Hook length in X direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "D43": {
+              "cellRef": "D43",
+              "inputName": "hook_length_y1",
+              "description": "Hook length in Y direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "C44": {
+              "cellRef": "C44",
+              "inputName": "hook_length_x2",
+              "description": "Hook length in X direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "D44": {
+              "cellRef": "D44",
+              "inputName": "hook_length_y2",
+              "description": "Hook length in Y direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_C"]
+            }
+          }
+        },
+        "member_51": {
+          "type": "object",
+          "description": "Member at row 51 (fifth slab configuration - full span)",
+          "properties": {
+            "C51": {
+              "cellRef": "C51",
+              "inputName": "span_x",
+              "description": "Span in X direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "D51": {
+              "cellRef": "D51",
+              "inputName": "span_y",
+              "description": "Span in Y direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "F51": {
+              "cellRef": "F51",
+              "inputName": "slab_depth",
+              "description": "Slab depth/thickness",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_D"]
+            },
+            "C53": {
+              "cellRef": "C53",
+              "inputName": "hook_length_x1",
+              "description": "Hook length in X direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "D53": {
+              "cellRef": "D53",
+              "inputName": "hook_length_y1",
+              "description": "Hook length in Y direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "C54": {
+              "cellRef": "C54",
+              "inputName": "hook_length_x2",
+              "description": "Hook length in X direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_C"]
+            },
+            "D54": {
+              "cellRef": "D54",
+              "inputName": "hook_length_y2",
+              "description": "Hook length in Y direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_C"]
+            },
+            "M55": {
+              "cellRef": "M55",
+              "inputName": "development_length_x",
+              "description": "Development length for X direction bars",
+              "unit": "mm",
+              "isCalculated": true,
+              "usedIn": ["MEAS_E"]
+            },
+            "M56": {
+              "cellRef": "M56",
+              "inputName": "development_length_y",
+              "description": "Development length for Y direction bars",
+              "unit": "mm",
+              "isCalculated": true,
+              "usedIn": ["MEAS_E"]
+            }
+          }
+        },
+        "member_63": {
+          "type": "object",
+          "description": "Member at row 63 (sixth slab configuration - with opening)",
+          "properties": {
+            "C63": {
+              "cellRef": "C63",
+              "inputName": "span_x",
+              "description": "Span in X direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "D63": {
+              "cellRef": "D63",
+              "inputName": "span_y",
+              "description": "Span in Y direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_A", "TOTAL_MEMBERS"]
+            },
+            "F63": {
+              "cellRef": "F63",
+              "inputName": "slab_depth",
+              "description": "Slab depth/thickness",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_D"]
+            },
+            "C64": {
+              "cellRef": "C64",
+              "inputName": "opening_x",
+              "description": "Opening dimension in X direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["TOTAL_MEMBERS", "MEAS_A"]
+            },
+            "D64": {
+              "cellRef": "D64",
+              "inputName": "opening_y",
+              "description": "Opening dimension in Y direction",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["TOTAL_MEMBERS", "MEAS_A"]
+            },
+            "C66": {
+              "cellRef": "C66",
+              "inputName": "hook_length_x1",
+              "description": "Hook length in X direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "D66": {
+              "cellRef": "D66",
+              "inputName": "hook_length_y1",
+              "description": "Hook length in Y direction (first)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_B"]
+            },
+            "C67": {
+              "cellRef": "C67",
+              "inputName": "hook_length_x2",
+              "description": "Hook length in X direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_C"]
+            },
+            "D67": {
+              "cellRef": "D67",
+              "inputName": "hook_length_y2",
+              "description": "Hook length in Y direction (second)",
+              "unit": "mm",
+              "isCalculated": false,
+              "usedIn": ["MEAS_C"]
+            },
+            "M68": {
+              "cellRef": "M68",
+              "inputName": "development_length_1",
+              "description": "Development length for bar type 1",
+              "unit": "mm",
+              "isCalculated": true,
+              "usedIn": ["MEAS_E"]
+            },
+            "M69": {
+              "cellRef": "M69",
+              "inputName": "development_length_2",
+              "description": "Development length for bar type 2",
+              "unit": "mm",
+              "isCalculated": true,
+              "usedIn": ["MEAS_E"]
+            },
+            "M70": {
+              "cellRef": "M70",
+              "inputName": "development_length_3",
+              "description": "Development length for bar type 3",
+              "unit": "mm",
+              "isCalculated": true,
+              "usedIn": ["MEAS_E"]
+            },
+            "M71": {
+              "cellRef": "M71",
+              "inputName": "development_length_4",
+              "description": "Development length for bar type 4",
+              "unit": "mm",
+              "isCalculated": true,
+              "usedIn": ["MEAS_E"]
+            }
+          }
+        }
+      }
+    },
+    "bar_type_inputs": {
+      "type": "object",
+      "description": "Bar-specific inputs (spacing, diameter, number of bars)",
+      "properties": {
+        "E_column": {
+          "cellRef": "E{row}",
+          "inputName": "spacing",
+          "description": "Bar spacing",
+          "unit": "mm",
+          "isCalculated": false,
+          "usedIn": ["TOTAL_MEMBERS"]
+        },
+        "F_column": {
+          "cellRef": "F{row}",
+          "inputName": "dia",
+          "description": "Bar diameter",
+          "unit": "mm",
+          "isCalculated": false,
+          "usedIn": ["DEDUCTION", "WEIGHT"]
+        },
+        "H_column": {
+          "cellRef": "H{row}",
+          "inputName": "no_bars",
+          "description": "Number of bars per member",
+          "unit": "count",
+          "isCalculated": false,
+          "usedIn": ["TOTAL_NOS"]
+        },
+        "R_column": {
+          "cellRef": "R{row}",
+          "inputName": "bend_count",
+          "description": "Number of bends in the bar",
+          "unit": "count",
+          "isCalculated": false,
+          "usedIn": ["DEDUCTION"]
+        }
+      }
+    },
+    "calculated_outputs": {
+      "type": "object",
+      "description": "Calculated values (intermediate and final)",
+      "properties": {
+        "G_column": {
+          "cellRef": "G{row}",
+          "inputName": "total_members",
+          "description": "Total number of members",
+          "unit": "count",
+          "isCalculated": true,
+          "usedIn": ["TOTAL_NOS"]
+        },
+        "I_column": {
+          "cellRef": "I{row}",
+          "inputName": "total_nos",
+          "description": "Total number of bars",
+          "unit": "count",
+          "isCalculated": true,
+          "usedIn": ["TOTAL_LENGTH", "WEIGHT"]
+        },
+        "J_column": {
+          "cellRef": "J{row}",
+          "inputName": "meas_a",
+          "description": "Measurement A (main span)",
+          "unit": "mm",
+          "isCalculated": true,
+          "usedIn": ["CUT_LENGTH"]
+        },
+        "K_column": {
+          "cellRef": "K{row}",
+          "inputName": "meas_b",
+          "description": "Measurement B (hook/bend 1)",
+          "unit": "mm",
+          "isCalculated": true,
+          "usedIn": ["CUT_LENGTH"]
+        },
+        "L_column": {
+          "cellRef": "L{row}",
+          "inputName": "meas_c",
+          "description": "Measurement C (hook/bend 2)",
+          "unit": "mm",
+          "isCalculated": true,
+          "usedIn": ["CUT_LENGTH"]
+        },
+        "M_column": {
+          "cellRef": "M{row}",
+          "inputName": "meas_d",
+          "description": "Measurement D (depth 1)",
+          "unit": "mm",
+          "isCalculated": true,
+          "usedIn": ["CUT_LENGTH"]
+        },
+        "N_column": {
+          "cellRef": "N{row}",
+          "inputName": "meas_e",
+          "description": "Measurement E (depth 2 or Ld)",
+          "unit": "mm",
+          "isCalculated": true,
+          "usedIn": ["CUT_LENGTH"]
+        },
+        "P_column": {
+          "cellRef": "P{row}",
+          "inputName": "meas_f",
+          "description": "Measurement F (additional length)",
+          "unit": "mm",
+          "isCalculated": true,
+          "usedIn": ["CUT_LENGTH"]
+        },
+        "Q_column": {
+          "cellRef": "Q{row}",
+          "inputName": "cut_length",
+          "description": "Total cut length per bar",
+          "unit": "mm",
+          "isCalculated": true,
+          "usedIn": ["TOTAL_LENGTH", "WEIGHT"]
+        },
+        "S_column": {
+          "cellRef": "S{row}",
+          "inputName": "deduction",
+          "description": "Bend deduction",
+          "unit": "mm",
+          "isCalculated": true,
+          "usedIn": ["ADJUSTED_CUT_LENGTH"]
+        }
+      }
+    }
+  }
+}
