@@ -5,11 +5,11 @@
  */
 
 import {
-  RebarProject,
   calculateProject,
   getSummaryByDiameter,
   getTotalProjectWeight,
-  BarCalculationOutput
+  type RebarProject,
+  type BarCalculationOutput
 } from './formula-engine';
 
 // ============================================
@@ -462,7 +462,7 @@ export function runAllExamples() {
   runExample4Detailed();
 }
 
-// For Node.js execution
-if (typeof require !== 'undefined' && require.main === module) {
-  runAllExamples();
-}
+// For Node.js execution - commented out for browser compatibility
+// if (typeof require !== 'undefined' && require.main === module) {
+//   runAllExamples();
+// }

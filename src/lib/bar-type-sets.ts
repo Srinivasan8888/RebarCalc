@@ -5,7 +5,7 @@
  * Full Span bar types - Simple pattern with beam penetrations
  * Formula: a=Span, b=Beam-Cover, c=Beam-Cover, d=Depth-2*Cover, e=Depth-2*Cover
  */
-const FULL_SPAN_TYPES = new Set([
+export const FULL_SPAN_TYPES = new Set([
   "Bottom Bar (X-X) Full Span",
   "Bottom Bar (Y-Y) Full Span",
   "Bottom Bar (Y-Y) Full Span (C8 To C9)",
@@ -18,7 +18,7 @@ const FULL_SPAN_TYPES = new Set([
  * Distribution bar types - Perpendicular span pattern
  * Formula: a=Perp Span, b=Beam-Cover, c=Beam-Cover, d=95, e=95
  */
-const DISTRIBUTION_TYPES = new Set([
+export const DISTRIBUTION_TYPES = new Set([
   "Bottom Bar Dist (X-X)",
   "Bottom Bar Dist (Y-Y)",
   "Top Bar Dist (Y-Y)",
@@ -86,7 +86,7 @@ const DISTRIBUTION_TYPES = new Set([
  * Combined bar types (Bottom & Top)
  * Formula: Similar to U-Bar but different field mapping
  */
-const COMBINED_TYPES = new Set([
+export const COMBINED_TYPES = new Set([
   "Bottom & Top Bar (X-X)",
   "Bottom & Top Bar (Y-Y)",
   "Top & Bottom Bar (Y-Y)",
@@ -100,7 +100,7 @@ const COMBINED_TYPES = new Set([
  * U-Bar types - Complex pattern with top extensions
  * Formula: a=Span, b=2*(Beam-Cover), c=2*(Beam-Cover) or 4*(Depth-2*Cover), d=Depth-2*Cover, e=Depth-2*Cover, f=Extensions
  */
-const U_BAR_TYPES = new Set([
+export const U_BAR_TYPES = new Set([
   "Bottom Bar (X-X)",
   "Bottom Bar (X-X) G2 to I2",
   "Bottom Bar (X-X) Right Segment",

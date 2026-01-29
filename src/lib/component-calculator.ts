@@ -298,7 +298,7 @@ export function getCutLengthV2(
 export function calculateComponentBarEntry(
   entry: ComponentBarEntry,
   componentSpan: number, // Span used for spacing calc
-  cover: number,
+  _cover: number, // Currently unused but kept for API compatibility
   settings: { developmentLengths: Record<number, number>, standardBarLength: number },
   isUBar: boolean = false
 ): CalculatedBarResult {

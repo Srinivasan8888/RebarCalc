@@ -155,12 +155,14 @@ export interface RebarProject {
 // COVER DEDUCTION PATTERNS
 // ============================================
 
-export enum CoverDeductionPattern {
-  FULL_U_SHAPE = 'FULL_U_SHAPE',         // 4 bends: 2× cover on depth, doubled hooks
-  SIMPLE_L_SHAPE = 'SIMPLE_L_SHAPE',     // 2 bends: 1× cover on all
-  COMBINED_BARS = 'COMBINED_BARS',       // Cover on main span too
-  FULL_SPAN = 'FULL_SPAN'                // Uses development length
-}
+export const CoverDeductionPattern = {
+  FULL_U_SHAPE: 'FULL_U_SHAPE',         // 4 bends: 2× cover on depth, doubled hooks
+  SIMPLE_L_SHAPE: 'SIMPLE_L_SHAPE',     // 2 bends: 1× cover on all
+  COMBINED_BARS: 'COMBINED_BARS',       // Cover on main span too
+  FULL_SPAN: 'FULL_SPAN'                // Uses development length
+} as const;
+
+export type CoverDeductionPattern = typeof CoverDeductionPattern[keyof typeof CoverDeductionPattern];
 
 export interface CoverDeductionInfo {
   meas_a_deduction: number;    // 0, 1, or 2 (multiplier for cover)
@@ -177,18 +179,20 @@ export interface CoverDeductionInfo {
 // FORMULA PATTERNS
 // ============================================
 
-export enum FormulaPattern {
-  BASIC_X_X = 'BASIC_X_X',                    // Bottom Bar (X-X)
-  BASIC_Y_Y = 'BASIC_Y_Y',                    // Bottom Bar (Y-Y)
-  DISTRIBUTED_X_X = 'DISTRIBUTED_X_X',        // Bottom Bar Dist (X-X)
-  DISTRIBUTED_Y_Y = 'DISTRIBUTED_Y_Y',        // Bottom Bar Dist (Y-Y)
-  BOTH_BARS_X_X = 'BOTH_BARS_X_X',           // Bottom & Top Bar (X-X)
-  BOTH_BARS_Y_Y = 'BOTH_BARS_Y_Y',           // Bottom & Top Bar (Y-Y)
-  FULL_SPAN_X_X = 'FULL_SPAN_X_X',           // Bottom Bar (X-X) Full Span
-  FULL_SPAN_Y_Y = 'FULL_SPAN_Y_Y',           // Bottom Bar (Y-Y) Full Span
-  WITH_OPENING_X_X = 'WITH_OPENING_X_X',     // With opening in X
-  WITH_OPENING_Y_Y = 'WITH_OPENING_Y_Y',     // With opening in Y
-}
+export const FormulaPattern = {
+  BASIC_X_X: 'BASIC_X_X',                    // Bottom Bar (X-X)
+  BASIC_Y_Y: 'BASIC_Y_Y',                    // Bottom Bar (Y-Y)
+  DISTRIBUTED_X_X: 'DISTRIBUTED_X_X',        // Bottom Bar Dist (X-X)
+  DISTRIBUTED_Y_Y: 'DISTRIBUTED_Y_Y',        // Bottom Bar Dist (Y-Y)
+  BOTH_BARS_X_X: 'BOTH_BARS_X_X',           // Bottom & Top Bar (X-X)
+  BOTH_BARS_Y_Y: 'BOTH_BARS_Y_Y',           // Bottom & Top Bar (Y-Y)
+  FULL_SPAN_X_X: 'FULL_SPAN_X_X',           // Bottom Bar (X-X) Full Span
+  FULL_SPAN_Y_Y: 'FULL_SPAN_Y_Y',           // Bottom Bar (Y-Y) Full Span
+  WITH_OPENING_X_X: 'WITH_OPENING_X_X',     // With opening in X
+  WITH_OPENING_Y_Y: 'WITH_OPENING_Y_Y',     // With opening in Y
+} as const;
+
+export type FormulaPattern = typeof FormulaPattern[keyof typeof FormulaPattern];
 
 // ============================================
 // CALCULATION FUNCTIONS

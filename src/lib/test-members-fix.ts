@@ -2,8 +2,8 @@
  * Test to verify the members calculation fix
  */
 import {
-  RebarProject,
-  calculateProject
+  calculateProject,
+  type RebarProject
 } from './formula-engine';
 
 // Test with user's exact dimensions

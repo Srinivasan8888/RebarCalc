@@ -24,8 +24,7 @@ import {
 
 
 import { 
-  calculateComponentBarEntry,
-  calculateNumberOfBars
+  calculateComponentBarEntry
 } from '@/lib/component-calculator';
 import { 
   calculateProjectTotal, 
@@ -195,7 +194,7 @@ export function BBSSpreadsheetView({
        const diameter = updates.diameter || targetBar.diameter;
        // Use new section spans if provided
        const newSectionSpan1 = updates.section_span_1 !== undefined ? updates.section_span_1 : targetBar.section_span_1;
-       const newSectionSpan2 = updates.section_span_2 !== undefined ? updates.section_span_2 : targetBar.section_span_2;
+       // const newSectionSpan2 = updates.section_span_2 !== undefined ? updates.section_span_2 : targetBar.section_span_2; // Currently unused
        
        const newMeasurements = calculateBarMeasurementsAuto(
          newBarType,
@@ -203,8 +202,7 @@ export function BBSSpreadsheetView({
          component,
          diameter,
          metadata?.concreteGrade || 'M30',
-         newSectionSpan1,
-         newSectionSpan2
+         newSectionSpan1
        );
        
        finalUpdates = { ...finalUpdates, measurements: newMeasurements };
@@ -221,27 +219,7 @@ export function BBSSpreadsheetView({
     });
     recalculateAll(updatedComponents);
   };
-  
-  const recalculateBarMeasurements = (componentId: string, barId: string) => {
-    const component = components.find(c => c.id === componentId);
-    const targetBar = component?.bars.find(b => b.id === barId);
-    
-    if (!component || !targetBar) return;
-    
-    // Only recalculate if we have beam widths and top extensions
-    if (component.componentType === 'SLAB' && component.beamWidths && component.topExtensions) {
-      const newMeasurements = calculateBarMeasurementsAuto(
-        targetBar.barType,
-        targetBar.direction,
-        component,
-        targetBar.diameter,
-        metadata?.concreteGrade || 'M30'
-      );
-      
-      updateBarEntry(componentId, barId, { measurements: newMeasurements });
-    }
-  };
-  
+
   const updateBarMeasurements = (componentId: string, barId: string, field: keyof BarMeasurements, value: number) => {
      const updatedComponents = components.map(c => {
       if (c.id === componentId) {
@@ -265,31 +243,6 @@ export function BBSSpreadsheetView({
     const updatedComponents = components.map(c => {
       if (c.id === componentId) {
         return { ...c, bars: c.bars.filter(b => b.id !== barId) };
-      }
-      return c;
-    });
-    recalculateAll(updatedComponents);
-  };
-
-  const recalculateComponentMeasurements = (componentId: string) => {
-    const component = components.find(c => c.id === componentId);
-    if (!component || component.componentType !== 'SLAB' || !component.beamWidths || !component.topExtensions) {
-      return;
-    }
-
-    const updatedComponents = components.map(c => {
-      if (c.id === componentId) {
-        const updatedBars = c.bars.map(bar => {
-          const newMeasurements = calculateBarMeasurementsAuto(
-            bar.barType,
-            bar.direction,
-            component,
-            bar.diameter,
-            metadata?.concreteGrade || 'M30'
-          );
-          return { ...bar, measurements: newMeasurements };
-        });
-        return { ...c, bars: updatedBars };
       }
       return c;
     });

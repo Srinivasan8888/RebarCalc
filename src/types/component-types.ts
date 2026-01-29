@@ -23,6 +23,8 @@ export interface BBSMetadata {
   itemDescription: string;         // e.g., "20th Floor Slab Reinforcement"
   concreteGrade: ConcreteGrade;
   steelGrade: SteelGrade;
+  developmentLengths?: any;        // Development length tables
+  standardBarLength?: number;      // Standard bar length in mm
 }
 
 // Component definition (like "A1 (B1 - 3H)" in the image)

@@ -2,9 +2,9 @@
  * Quick test of the updated formula engine
  */
 import {
-  RebarProject,
   calculateProject,
-  getTotalProjectWeight
+  getTotalProjectWeight,
+  type RebarProject
 } from './formula-engine';
 
 // Test with P4 F-shaped slab example

@@ -19,66 +19,20 @@ import {
   // COMPONENT_COVERS // Unused
 } from './constants';
 
+// Import bar type sets
+import {
+  FULL_SPAN_TYPES,
+  DISTRIBUTION_TYPES,
+  COMBINED_TYPES
+  // U_BAR_TYPES // Currently unused but kept for future use
+} from './bar-type-sets';
+
 // Import formula calculator
 import { 
   calculateWithCanonicalFormulas, 
   hasCanonicalFormula,
   getCanonicalBarMetadata 
 } from './formula-calculator';
-
-// ============================================================================
-// BAR TYPE CATEGORIZATION (FINAL - typos fixed, duplicates removed)
-// Reduced from 210 variants to 20 unique base types
-// ============================================================================
-
-/**
- * Full Span bar types - Simple pattern with beam penetrations
- * Formula: a=Span, b=Beam-Cover, c=Beam-Cover, d=Depth-2*Cover, e=Depth-2*Cover
- */
-const FULL_SPAN_TYPES = new Set([
-  "Bottom Bar (X-X) Full Span",
-  "Bottom Bar (Y-Y) Full Span",
-  "Top Bar (X-X) Full Span",
-  "Top Bar (Y-Y) Full Span",
-]);
-
-/**
- * Distribution bar types - Perpendicular span pattern
- * Formula: a=Perp Span, b=Beam-Cover, c=Beam-Cover, d=95, e=95
- */
-const DISTRIBUTION_TYPES = new Set([
-  "Bottom Bar Dist (X-X)",
-  "Bottom Bar Dist (Y-Y)",
-  "Top Bar Dist (Y-Y)",
-  "Top Dist Bar (X-X)",
-  "Top Dist Bar (Y-Y)",
-]);
-
-/**
- * Combined bar types (Bottom & Top)
- * Formula: Similar to U-Bar but uses combined bar calculation
- */
-const COMBINED_TYPES = new Set([
-  "Bottom & Top Bar (X-X)",
-  "Bottom & Top Bar (Y-Y)",
-  "Top & Bottom Bar (Y-Y)",
-  "Top Main Bar (X-X)",
-  "Top Main Bar (Y-Y)",
-]);
-
-/**
- * U-Bar types - Complex pattern with top extensions
- * Formula: a=Span, b=2*(Beam-Cover), c=2*(Beam-Cover) or 4*(Depth-2*Cover), d=Depth-2*Cover, e=Depth-2*Cover, f=Extensions
- * Note: Bottom Bar and Top Bar without "Full Span" or "Dist" modifiers use U-Bar pattern
- */
-const U_BAR_TYPES = new Set([
-  "Bottom Bar (X-X)",
-  "Bottom Bar (Y-Y)",
-  "Top Bar (X-X)",
-  "Top Bar (Y-Y)",
-  "Top Main Bar (X-X)",
-  "Top Main Bar (Y-Y)",
-]);
 
 // ============================================================================
 // ENHANCED CALCULATION DISPATCHER
@@ -208,8 +162,8 @@ function calculateSlabBarMeasurements(
   section_span_override?: number
 ): BarMeasurements {
   
-  // Use override if provided, otherwise standard span
-  const span = section_span_override || (direction === 'X' ? component.spanX : component.spanY);
+  // Use override if provided, otherwise standard span (currently unused but kept for future use)
+  // const _span = section_span_override || (direction === 'X' ? component.spanX : component.spanY);
   
   // ============================================================================
   // CATEGORY-BASED ROUTING (All 210 bar types)
@@ -417,7 +371,7 @@ export function _calculateBottomBarCurtailed(
  * Excel Formula: Same as Bottom Bar Full Span
  * a=Span, b=Left-Cover, c=Right-Cover, d=Depth-2*Cover, e=Depth-2*Cover
  */
-function calculateTopBarFullSpan(
+export function calculateTopBarFullSpan(
   direction: BarDirection,
   component: ConcreteComponent,
   diameter: number,
@@ -434,7 +388,7 @@ function calculateTopBarFullSpan(
  * Top Distribution Bar - Distribution bars at top level
  * Similar to bottom distribution but at top level
  */
-function calculateTopDistributionBar(
+export function calculateTopDistributionBar(
   direction: BarDirection,
   component: ConcreteComponent,
   diameter: number
@@ -450,8 +404,8 @@ function calculateTopDistributionBar(
 function calculateBottomBarFullSpan(
   direction: BarDirection,
   component: ConcreteComponent,
-  diameter: number,
-  concreteGrade: ConcreteGrade,
+  _diameter: number, // Currently unused but kept for API consistency
+  _concreteGrade: ConcreteGrade, // Currently unused but kept for API consistency
   section_span_override?: number
 ): BarMeasurements {
   // Use override if provided, otherwise standard span
@@ -612,7 +566,7 @@ function calculateCombinedBar(
 /**
  * Extra Top Bar - Additional top reinforcement
  */
-function calculateExtraTopBar(
+export function calculateExtraTopBar(
   _component: ConcreteComponent, // Prefix with _ to indicate intentionally unused
   diameter: number
 ): BarMeasurements {
@@ -623,7 +577,7 @@ function calculateExtraTopBar(
 /**
  * Extra Bottom Bar - Additional bottom reinforcement
  */
-function calculateExtraBottomBar(
+export function calculateExtraBottomBar(
   _component: ConcreteComponent, // Prefix with _ to indicate intentionally unused
   diameter: number,
   concreteGrade: ConcreteGrade
@@ -635,7 +589,7 @@ function calculateExtraBottomBar(
 /**
  * Chair Bar - Support bars for top reinforcement
  */
-function calculateChairBar(
+export function calculateChairBar(
   component: ConcreteComponent,
   diameter: number
 ): BarMeasurements {
