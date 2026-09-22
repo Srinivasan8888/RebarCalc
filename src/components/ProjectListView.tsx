@@ -1,219 +1,147 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { getProjectList, deleteFromLocalStorage, type ProjectListItem } from '@/lib/local-storage';
-import { PlusIcon, EditIcon, TrashIcon, FolderIcon } from 'lucide-react';
+import { getProjectList, loadFromLocalStorage, deleteFromLocalStorage, type ProjectListItem } from '@/lib/local-storage';
+import { calculateAll } from '@/lib/calculator';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface ProjectListViewProps {
   onCreateProject: () => void;
-  onEditProject: (projectId: string) => void;
   onOpenProject: (projectId: string) => void;
 }
 
-export function ProjectListView({ onCreateProject, onEditProject, onOpenProject }: ProjectListViewProps) {
-  const [projects, setProjects] = useState<ProjectListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+interface ProjectRow extends ProjectListItem {
+  mode: 'Manual' | 'Component';
+  members: number;
+  bars: number;
+  weightKg: number;
+}
+
+// Reads every project once; the totals are the same numbers the project page shows.
+// ponytail: O(projects) localStorage reads on load, fine until someone has hundreds of projects
+function loadRows(): ProjectRow[] {
+  const list = getProjectList().data ?? [];
+  return list
+    .map(item => {
+      const loaded = loadFromLocalStorage(item.id).data;
+      if (!loaded) return { ...item, mode: 'Manual' as const, members: 0, bars: 0, weightKg: 0 };
+      const { config, bars } = loaded;
+      if (config.calculationMode === 'COMPONENT') {
+        const components = config.components ?? [];
+        return {
+          ...item, mode: 'Component' as const,
+          members: components.length,
+          bars: components.reduce((n, c) => n + c.bars.length, 0),
+          weightKg: components.reduce((kg, c) => kg + c.bars.reduce((s, b) => s + (b.calculated?.totalWeight ?? 0), 0), 0)
+        };
+      }
+      return {
+        ...item, mode: 'Manual' as const,
+        members: new Set(bars.map(b => b.memberType)).size,
+        bars: bars.length,
+        weightKg: calculateAll(bars, config).reduce((kg, b) => kg + b.totalWeight, 0)
+      };
+    })
+    .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+}
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+export function ProjectListView({ onCreateProject, onOpenProject }: ProjectListViewProps) {
+  // localStorage is synchronous, so the list is ready on first render; no loading state exists to skeleton.
+  const [rows, setRows] = useState<ProjectRow[]>(loadRows);
   const [error, setError] = useState<string | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<ProjectListItem | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectRow | null>(null);
 
-  const loadProjects = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const result = getProjectList();
-      
-      if (result.success) {
-        setProjects(result.data || []);
-      } else {
-        setError(result.error || 'Failed to load projects');
-      }
-    } catch (err) {
-      setError('An unexpected error occurred while loading projects');
-    } finally {
-      setLoading(false);
-    }
+  const load = () => {
+    try { setRows(loadRows()); setError(null); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Could not read saved projects'); setRows([]); }
   };
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  const handleDeleteProject = async (project: ProjectListItem) => {
-    setProjectToDelete(project);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
+  const confirmDelete = () => {
     if (!projectToDelete) return;
-
-    try {
-      const result = deleteFromLocalStorage(projectToDelete.id);
-      
-      if (result.success) {
-        // Reload projects list
-        await loadProjects();
-        setDeleteDialogOpen(false);
-        setProjectToDelete(null);
-      } else {
-        setError(result.error || 'Failed to delete project');
-      }
-    } catch (err) {
-      setError('An unexpected error occurred while deleting the project');
-    }
+    const result = deleteFromLocalStorage(projectToDelete.id);
+    if (!result.success) setError(result.error || 'Could not delete project');
+    setProjectToDelete(null);
+    load();
   };
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return 'Unknown';
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading projects...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <p className="text-destructive mb-4">{error}</p>
-            <Button onClick={loadProjects} variant="outline">
-              Try Again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Projects</h1>
-          <p className="text-muted-foreground">
-            Manage your Bar Bending Schedule projects
-          </p>
-        </div>
-        <Button onClick={onCreateProject} className="flex items-center gap-2">
-          <PlusIcon className="h-4 w-4" />
-          New Project
+        <h1 className="text-xl font-semibold">Projects</h1>
+        <Button onClick={onCreateProject} className="h-11">
+          <Plus className="h-4 w-4" /> New project
         </Button>
       </div>
 
-      {/* Projects List */}
-      {projects.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <FolderIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No projects yet</h3>
-              <p className="text-muted-foreground mb-6">
-                Create your first Bar Bending Schedule project to get started
-              </p>
-              <Button onClick={onCreateProject} className="flex items-center gap-2">
-                <PlusIcon className="h-4 w-4" />
-                Create Project
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {projects.map((project) => (
-            <Card key={project.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-medium truncate">
-                        {project.name}
-                      </h3>
-                      {/* Note: We don't have codeStandard in ProjectListItem, so we'll skip this for now */}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Last modified: {formatDate(project.lastModified)}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onOpenProject(project.id)}
-                      className="flex items-center gap-2"
-                    >
-                      Open
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onEditProject(project.id)}
-                      className="flex items-center gap-2"
-                    >
-                      <EditIcon className="h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteProject(project)}
-                      className="flex items-center gap-2 text-destructive hover:text-destructive"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {rows.length === 0 ? (
+        <div className="py-16 text-center text-sm text-muted-foreground max-w-md mx-auto space-y-4">
+          <p>A project holds one BBS: its members, bar rows and dia-wise steel. Add members by hand, or open the project and import a BBS workbook or a beam schedule.</p>
+          <Button onClick={onCreateProject} className="h-11">
+            <Plus className="h-4 w-4" /> New project
+          </Button>
         </div>
+      ) : (
+        <Table>
+          <TableHeader className="sticky top-0 bg-background">
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Project</TableHead>
+              <TableHead className="w-28">Mode</TableHead>
+              <TableHead className="w-24 text-right">Members</TableHead>
+              <TableHead className="w-20 text-right">Bars</TableHead>
+              <TableHead className="w-32 text-right">Steel (kg)</TableHead>
+              <TableHead className="w-32">Modified</TableHead>
+              <TableHead className="w-14" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map(p => (
+                  <TableRow
+                    key={p.id}
+                    className="cursor-pointer hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    tabIndex={0}
+                    onClick={() => onOpenProject(p.id)}
+                    onKeyDown={e => { if (e.key === 'Enter') onOpenProject(p.id); }}
+                  >
+                    <TableCell className="h-12 font-medium">{p.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{p.mode}</TableCell>
+                    <TableCell className="num">{p.members}</TableCell>
+                    <TableCell className="num">{p.bars}</TableCell>
+                    <TableCell className="num">{p.weightKg.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDate(p.lastModified)}</TableCell>
+                    <TableCell className="p-0 text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-11 w-11 text-muted-foreground hover:text-destructive"
+                        aria-label={`Delete ${p.name}`}
+                        onClick={e => { e.stopPropagation(); setProjectToDelete(p); }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={projectToDelete !== null} onOpenChange={open => !open && setProjectToDelete(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Project</DialogTitle>
+            <DialogTitle>Delete {projectToDelete?.name}?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{projectToDelete?.name}"? This action cannot be undone.
+              {projectToDelete?.bars ?? 0} bar rows and {projectToDelete?.weightKg.toFixed(2)} kg of steel go with it. There is no undo.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-            >
-              Delete
-            </Button>
+            <Button variant="outline" className="h-11" onClick={() => setProjectToDelete(null)}>Cancel</Button>
+            <Button variant="destructive" className="h-11" onClick={confirmDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

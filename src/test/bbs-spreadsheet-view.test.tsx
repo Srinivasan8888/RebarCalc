@@ -29,8 +29,8 @@ test('table shows the Excel row 15 numbers from bar.calculated', () => {
     />
   );
 
-  expect(screen.getByText('4596mm')).toBeInTheDocument();  // T15
-  expect(screen.getByText('22.980m')).toBeInTheDocument(); // U15
+  expect(screen.getByText('4596')).toBeInTheDocument();   // T15
+  expect(screen.getByText('22.980')).toBeInTheDocument(); // U15
   expect(screen.getByText('4660')).toBeInTheDocument();    // Q15
 });
 
@@ -49,11 +49,12 @@ test('369 imported beams render as summary rows: only the expanded one has bar r
   );
   const ms = performance.now() - t0;
   const nodes = container.querySelectorAll('*').length;
-  expect(container.querySelectorAll('tbody tr')).toHaveLength(369);  // one summary row per beam, no bar rows
+  const bbs = container.querySelector('table')!; // first table is the BBS; the totals block is its own table
+  expect(bbs.querySelectorAll('tbody tr')).toHaveLength(369);  // one summary row per beam, no bar rows
   expect(nodes).toBeLessThan(369 * 20);                               // ponytail: was ~40k nodes with every bar row mounted
   expect(ms).toBeLessThan(5000);
 
   fireEvent.click(screen.getByText('B4'));
   expect(screen.getAllByText('Span_Top - Layer 1', { selector: 'option' }).length).toBeGreaterThan(0); // B4's rows now mounted
-  expect(container.querySelectorAll('tbody tr').length).toBeLessThan(369 + 12);
+  expect(bbs.querySelectorAll('tbody tr').length).toBeLessThan(369 + 12);
 });

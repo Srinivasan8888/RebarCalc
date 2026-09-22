@@ -43,7 +43,7 @@ function App() {
   };
 
   const handleBackToProjects = () => {
-    setCurrentView('projects');
+    setCurrentView('dashboard'); // the dashboard is the project list
     setCurrentProject(null);
   };
 
@@ -87,7 +87,7 @@ function App() {
       
       case 'projects':
         return (
-          <ProjectManager onProjectSelected={handleProjectSelected} />
+          <ProjectManager onProjectSelected={handleProjectSelected} initialMode="create" />
         );
       
       case 'project-detail':

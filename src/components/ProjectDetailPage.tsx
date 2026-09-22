@@ -194,7 +194,7 @@ export function ProjectDetailPage({
       case 'error':
         return 'Save failed';
       default:
-        return 'Auto-save enabled';
+        return 'Autosave on';
     }
   };
 
@@ -212,12 +212,12 @@ export function ProjectDetailPage({
             <span>{config.codeStandard} Standard</span>
             {currentProfile && (
               <>
-                <span>•</span>
+                <span aria-hidden>·</span>
                 <span>{currentProfile.name}</span>
               </>
             )}
-            <span>•</span>
-            <span>{allBars.length} bars total</span>
+            <span aria-hidden>·</span>
+            <span>{allBars.length} bars</span>
           </div>
         </div>
         
@@ -299,16 +299,19 @@ export function ProjectDetailPage({
         </Button>
       )}
 
-      <Dialog open={importDoubts.length > 0} onOpenChange={open => !open && setImportDoubts([])}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{importDoubts.length} doubts from the schedule — settle these before the steel is cut</DialogTitle>
-          </DialogHeader>
-          <ul className="max-h-[60vh] overflow-y-auto space-y-1 text-sm list-disc pl-5">
+      {importDoubts.length > 0 && (
+        <section role="status" className="rounded-md border border-warning/60 bg-warning/10 px-4 py-3 text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <p className="font-medium text-warning-foreground">
+              {importDoubts.length} {importDoubts.length === 1 ? 'doubt' : 'doubts'} from the import. Settle these before steel is cut.
+            </p>
+            <Button variant="ghost" size="sm" onClick={() => setImportDoubts([])}>Dismiss</Button>
+          </div>
+          <ol className="mt-2 max-h-64 list-decimal space-y-0.5 overflow-y-auto pl-5">
             {importDoubts.map((d, i) => <li key={i}>{d}</li>)}
-          </ul>
-        </DialogContent>
-      </Dialog>
+          </ol>
+        </section>
+      )}
 
       {/* Methodology Toggle */}
       <MethodologyToggle 

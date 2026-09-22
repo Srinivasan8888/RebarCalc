@@ -42,91 +42,85 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Light is the primary target: a QS on an office monitor, a site engineer on a tablet in daylight.
+     Neutrals are tinted toward the accent hue (verdigris, 195°) at chroma 0.004–0.008; nothing is pure black or white. */
+  --radius: 0.375rem;
+  --background: oklch(0.985 0.004 195);
+  --foreground: oklch(0.21 0.012 195);
+  --card: oklch(0.995 0.003 195);
+  --card-foreground: oklch(0.21 0.012 195);
+  --popover: oklch(0.995 0.003 195);
+  --popover-foreground: oklch(0.21 0.012 195);
+  /* The one accent: verdigris. Primary actions, current selection, focus. ≤10% of any screen. */
+  --primary: oklch(0.52 0.10 195);
+  --primary-foreground: oklch(0.985 0.004 195);
+  --secondary: oklch(0.955 0.006 195);
+  --secondary-foreground: oklch(0.21 0.012 195);
+  --muted: oklch(0.955 0.006 195);
+  --muted-foreground: oklch(0.50 0.014 195);
+  --accent: oklch(0.94 0.012 195);
+  --accent-foreground: oklch(0.21 0.012 195);
+  --destructive: oklch(0.55 0.19 25);
+  --warning: oklch(0.72 0.14 75);
+  --warning-foreground: oklch(0.30 0.06 75);
+  --border: oklch(0.90 0.008 195);
+  --input: oklch(0.88 0.008 195);
+  --ring: oklch(0.52 0.10 195);
+  --chart-1: oklch(0.52 0.10 195);
+  --chart-2: oklch(0.60 0.12 60);
+  --chart-3: oklch(0.45 0.08 260);
+  --chart-4: oklch(0.70 0.14 130);
+  --chart-5: oklch(0.55 0.15 340);
+  --sidebar: oklch(0.965 0.006 195);
+  --sidebar-foreground: oklch(0.21 0.012 195);
+  --sidebar-primary: oklch(0.52 0.10 195);
+  --sidebar-primary-foreground: oklch(0.985 0.004 195);
+  --sidebar-accent: oklch(0.94 0.012 195);
+  --sidebar-accent-foreground: oklch(0.21 0.012 195);
+  --sidebar-border: oklch(0.90 0.008 195);
+  --sidebar-ring: oklch(0.52 0.10 195);
 }
 
 .dark {
-  /* Deep Slate/Blue Background for richness */
-  --background: oklch(0.12 0.02 260);
-  --foreground: oklch(0.98 0 0);
-
-  /* Slightly lighter cards with subtle tint */
-  --card: oklch(0.17 0.03 260);
-  --card-foreground: oklch(0.98 0 0);
-  
-  --popover: oklch(0.17 0.03 260);
-  --popover-foreground: oklch(0.98 0 0);
-
-  /* Vibrant Primary Blue */
-  --primary: oklch(0.65 0.2 250); 
-  --primary-foreground: oklch(1 0 0);
-
-  /* Secondary/Muted with cool undertones */
-  --secondary: oklch(0.25 0.04 260);
-  --secondary-foreground: oklch(0.98 0 0);
-  
-  --muted: oklch(0.25 0.04 260);
-  --muted-foreground: oklch(0.7 0.02 260);
-  
-  --accent: oklch(0.25 0.04 260);
-  --accent-foreground: oklch(0.98 0 0);
-  
-  --destructive: oklch(0.5 0.2 25);
-  
-  /* Borders - slightly visible slate */
-  --border: oklch(0.3 0.04 260);
-  --input: oklch(0.3 0.04 260);
-  --ring: oklch(0.65 0.2 250);
-
-  /* Charts adjusted for dark mode visibility */
-  --chart-1: oklch(0.65 0.2 250); /* Blue */
-  --chart-2: oklch(0.7 0.15 160); /* Teal */
-  --chart-3: oklch(0.75 0.15 60); /* Orange */
-  --chart-4: oklch(0.7 0.2 320); /* Purple */
-  --chart-5: oklch(0.8 0.15 90); /* Yellow */
-
-  --sidebar: oklch(0.15 0.03 260);
-  --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-primary: oklch(0.65 0.2 250);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.25 0.04 260);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.3 0.04 260);
-  --sidebar-ring: oklch(0.65 0.2 250);
+  /* Follows the OS preference only; same hue family, lifted chroma so the tint still reads. */
+  --background: oklch(0.17 0.012 195);
+  --foreground: oklch(0.95 0.006 195);
+  --card: oklch(0.20 0.014 195);
+  --card-foreground: oklch(0.95 0.006 195);
+  --popover: oklch(0.20 0.014 195);
+  --popover-foreground: oklch(0.95 0.006 195);
+  --primary: oklch(0.72 0.11 195);
+  --primary-foreground: oklch(0.17 0.012 195);
+  --secondary: oklch(0.26 0.016 195);
+  --secondary-foreground: oklch(0.95 0.006 195);
+  --muted: oklch(0.26 0.016 195);
+  --muted-foreground: oklch(0.68 0.014 195);
+  --accent: oklch(0.29 0.02 195);
+  --accent-foreground: oklch(0.95 0.006 195);
+  --destructive: oklch(0.62 0.17 25);
+  --warning: oklch(0.78 0.13 75);
+  --warning-foreground: oklch(0.20 0.05 75);
+  --border: oklch(0.30 0.016 195);
+  --input: oklch(0.32 0.016 195);
+  --ring: oklch(0.72 0.11 195);
+  --chart-1: oklch(0.72 0.11 195);
+  --chart-2: oklch(0.75 0.13 60);
+  --chart-3: oklch(0.65 0.10 260);
+  --chart-4: oklch(0.78 0.14 130);
+  --chart-5: oklch(0.70 0.15 340);
+  --sidebar: oklch(0.19 0.013 195);
+  --sidebar-foreground: oklch(0.95 0.006 195);
+  --sidebar-primary: oklch(0.72 0.11 195);
+  --sidebar-primary-foreground: oklch(0.17 0.012 195);
+  --sidebar-accent: oklch(0.29 0.02 195);
+  --sidebar-accent-foreground: oklch(0.95 0.006 195);
+  --sidebar-border: oklch(0.30 0.016 195);
+  --sidebar-ring: oklch(0.72 0.11 195);
 }
 
 @layer base {
@@ -135,5 +129,17 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    /* Every number in the app sits in a column; tabular figures let columns scan vertically. */
+    font-variant-numeric: tabular-nums;
   }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+}
+
+@utility num {
+  /* Numeric cell: right-aligned, tabular figures, no letter-spacing tricks. */
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }

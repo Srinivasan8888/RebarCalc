@@ -3,8 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, Info, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, ChevronDown } from 'lucide-react';
 import type { 
   ConcreteComponent, 
   ConcreteComponentType, 
@@ -26,7 +25,25 @@ import {
 import { recalculateComponents } from '@/lib/component-calculator';
 import { calculateProjectTotal, calculateBarMeasurementsAuto } from '@/lib/enhanced-calculator';
 import { TotalSteelWeight } from './TotalSteelWeight';
-import { ComponentFormulaTooltip } from './ComponentFormulaTooltip';
+import { fmt } from '@/lib/utils';
+
+const CELL = 'h-9 w-full min-w-0 rounded-sm bg-transparent px-1.5 text-sm num placeholder:text-muted-foreground/60 focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring/60';
+const SELECT = 'h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60';
+const ZERO = { left: 0, right: 0, top: 0, bottom: 0 };
+const SIDES = ['left', 'right', 'top', 'bottom'] as const;
+
+/** Labelled dimension input for the member toolbar */
+function Dim({ label, value, onChange, width = 'w-20' }: { label: string; value?: number; onChange: (n: number) => void; width?: string }) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      {label}
+      <input type="number" value={value || ''} onChange={e => onChange(parseFloat(e.target.value) || 0)}
+        className={`h-9 ${width} rounded-md border border-input bg-background px-2 text-sm text-foreground num focus:outline-none focus:ring-2 focus:ring-ring/60`} />
+    </label>
+  );
+}
+
+const showMm = (n?: number) => n === undefined ? '' : Number.isInteger(n) ? String(n) : n.toFixed(1);
 
 interface BBSSpreadsheetViewProps {
   components: ConcreteComponent[];
@@ -56,7 +73,7 @@ export function BBSSpreadsheetView({
   }, []);
 
   // Only one component renders its card and bar rows at a time; the rest are one summary row each.
-  // ponytail: a 369-beam import was ~40k DOM nodes and froze the tab — collapse beats virtualisation here.
+  // ponytail: a 369-beam import was ~40k DOM nodes and froze the tab , collapse beats virtualisation here.
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const isOpen = (c: ConcreteComponent) => components.length === 1 || expandedId === c.id;
 
@@ -253,583 +270,267 @@ export function BBSSpreadsheetView({
 
   const projectSummary = calculateProjectTotal(components);
 
-  if (!metadata) return <div>Loading...</div>;
+  if (!metadata) return <div className="text-sm text-muted-foreground">Loading…</div>;
+
+  const ld: Record<number, number> = metadata.developmentLengths
+    ?? DEVELOPMENT_LENGTH_TABLES[metadata.concreteGrade as keyof typeof DEVELOPMENT_LENGTH_TABLES]
+    ?? DEVELOPMENT_LENGTH_TABLES.M30;
+  const label = 'flex flex-col gap-1 text-xs text-muted-foreground';
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* 1. Project Header & Metadata */}
-      <Card className="bg-muted/10">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase text-muted-foreground">Project Name</label>
-              <Input 
-                value={metadata.projectName} 
-                onChange={e => handleMetadataChange('projectName', e.target.value)}
-                placeholder="Enter Project Name"
-                className="font-medium"
-              />
-            </div>
-            
-             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-1">
-                <label className="text-xs font-semibold uppercase text-muted-foreground">Item Description</label>
-                <Input 
-                  value={metadata.itemDescription} 
-                  onChange={e => handleMetadataChange('itemDescription', e.target.value)}
-                  placeholder="e.g. 20th Floor Slab"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold uppercase text-muted-foreground">Dwg No</label>
-                <Input 
-                  value={metadata.drawingNumber} 
-                  onChange={e => handleMetadataChange('drawingNumber', e.target.value)}
-                  placeholder="Reference Dwg"
-                />
-              </div>
-            </div>
+    <div className="space-y-5">
+      {/* Sheet header: rows 1–4 of the workbook */}
+      <section className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm md:grid-cols-[2fr_1.5fr_1fr_0.7fr_0.7fr]">
+        <label className={label}>Project
+          <Input value={metadata.projectName} onChange={e => handleMetadataChange('projectName', e.target.value)} placeholder="Project name" className="font-medium" />
+        </label>
+        <label className={label}>Item
+          <Input value={metadata.itemDescription} onChange={e => handleMetadataChange('itemDescription', e.target.value)} placeholder="20th Floor Slab Reinforcement" />
+        </label>
+        <label className={label}>Dwg No
+          <Input value={metadata.drawingNumber} onChange={e => handleMetadataChange('drawingNumber', e.target.value)} placeholder="ST-B-220-R0" />
+        </label>
+        <span className={label}>Concrete
+          <Select value={metadata.concreteGrade} onValueChange={(v: string) => handleMetadataChange('concreteGrade', v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{['M20', 'M25', 'M30', 'M35', 'M40'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+          </Select>
+        </span>
+        <span className={label}>Steel
+          <Select value={metadata.steelGrade} onValueChange={(v: string) => handleMetadataChange('steelGrade', v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{['Fe415', 'Fe500', 'Fe550'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+          </Select>
+        </span>
+        <p className="col-span-full text-xs text-muted-foreground tabular-nums">
+          Ld {metadata.concreteGrade}: {Object.entries(ld).map(([d, v]) => `${d} → ${v}`).join(' · ')}
+          {metadata.curtailOffset ? ` · curtail ${metadata.curtailOffset}` : ''}
+        </p>
+      </section>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                 <label className="text-xs font-semibold uppercase text-muted-foreground">Concrete Grade</label>
-                 <Select 
-                   value={metadata.concreteGrade} 
-                   onValueChange={(v: any) => handleMetadataChange('concreteGrade', v)}
-                 >
-                   <SelectTrigger><SelectValue /></SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="M20">M20</SelectItem>
-                     <SelectItem value="M25">M25</SelectItem>
-                     <SelectItem value="M30">M30</SelectItem>
-                     <SelectItem value="M35">M35</SelectItem>
-                     <SelectItem value="M40">M40</SelectItem>
-                   </SelectContent>
-                 </Select>
-              </div>
-              <div className="space-y-1">
-                 <label className="text-xs font-semibold uppercase text-muted-foreground">Steel Grade</label>
-                 <Select 
-                   value={metadata.steelGrade} 
-                   onValueChange={(v: any) => handleMetadataChange('steelGrade', v)}
-                 >
-                   <SelectTrigger><SelectValue /></SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="Fe415">Fe415</SelectItem>
-                     <SelectItem value="Fe500">Fe500</SelectItem>
-                     <SelectItem value="Fe550">Fe550</SelectItem>
-                   </SelectContent>
-                 </Select>
-              </div>
-            </div>
-
-            {/* Reference Table - Visual Only */}
-            <div className="bg-card border rounded p-2 text-xs">
-              <div className="flex justify-between items-center mb-1 font-semibold text-muted-foreground">
-                <span>Ld for {metadata.concreteGrade}</span>
-                <span>(Development Length Reference)</span>
-              </div>
-              <div className="flex justify-between gap-2 overflow-x-auto">
-                {Object.entries(DEVELOPMENT_LENGTH_TABLES[metadata.concreteGrade as keyof typeof DEVELOPMENT_LENGTH_TABLES] || DEVELOPMENT_LENGTH_TABLES.M30)
-                  .map(([dia, val]) => (
-                   <div key={dia} className="flex flex-col items-center min-w-[30px]">
-                     <span className="font-bold">{dia}</span>
-                     <span>{val}</span>
-                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 2. Main Spreadsheet Table */}
-      <div className="border rounded-md overflow-x-auto bg-background">
-        <Table className="w-full min-w-[1800px]">
-          <TableHeader>
-             <TableRow className="bg-muted/50 hover:bg-muted/50">
-               <TableHead className="w-[50px]">S.No</TableHead>
-               <TableHead className="w-[200px]">Bar Type / Component</TableHead>
-               <TableHead className="w-[120px] text-center">Span (X/Y)</TableHead>
-               {/* Fixed Headers - Removed Redundant 'Bar Type & Direction', 'Member Span' */}
-               
-               <TableHead className="w-[80px] text-center">Spacing (mm)</TableHead>
-               <TableHead className="w-[80px] text-center">Dia (mm)</TableHead>
-               <TableHead className="w-[80px] text-center">Bars/Memb</TableHead>
-               <TableHead className="w-[80px] text-center">Total Members</TableHead>
-               <TableHead className="w-[80px] text-center">Total nos.</TableHead>
-               
-               <TableHead className="w-[500px] text-center border-l border-r">
-                  <ComponentFormulaTooltip bar={{ barType: 'Bottom Bar (X-X)', direction: 'X', diameter: 8, spacing: 150, measurements: { a: 0 } } as any}>
-                    <div className="cursor-help">
-                      Measurements of Bar (mm)
-                      <div className="grid grid-cols-10 text-xs font-normal mt-1 text-muted-foreground">
-                        <span>a</span>
-                        <span>b</span>
-                        <span>c</span>
-                        <span>d</span>
-                        <span>e</span>
-                        <span>f</span>
-                        <span>Lap</span>
-                        <span>Total</span>
-                        <span>Bends</span>
-                        <span>Deduction</span>
-                      </div>
-                    </div>
-                  </ComponentFormulaTooltip>
-               </TableHead>
-               <TableHead className="w-[80px] text-center">Cut Length</TableHead>
-               <TableHead className="w-[80px] text-center">Total Length (m)</TableHead>
-               <TableHead className="w-[60px] text-center">Bends</TableHead>
-               <TableHead className="w-[50px]"></TableHead>
-             </TableRow>
+      {/* The BBS, in the sheet's column order */}
+      <div className="overflow-x-auto rounded-md border">
+        <Table className="min-w-[1880px]">
+          <TableHeader className="sticky top-0 z-10 bg-muted/70">
+            <TableRow className="hover:bg-transparent [&>th]:h-10 [&>th]:px-2 [&>th]:text-xs [&>th]:font-medium [&>th]:text-muted-foreground">
+              <TableHead className="w-10 text-right">#</TableHead>
+              <TableHead className="w-60">Member · Bar type</TableHead>
+              <TableHead className="w-24 text-right">Span</TableHead>
+              <TableHead className="w-20 text-right">Dia</TableHead>
+              <TableHead className="w-20 text-right">Spacing</TableHead>
+              <TableHead className="w-16 text-right">Bars/mbr</TableHead>
+              <TableHead className="w-20 text-right">Members</TableHead>
+              <TableHead className="w-20 text-right">Total nos</TableHead>
+              {['a', 'b', 'c', 'd', 'e', 'f', 'Lap'].map(k => <TableHead key={k} className="w-16 text-right">{k}</TableHead>)}
+              <TableHead className="w-20 text-right">Total</TableHead>
+              <TableHead className="w-14 text-right">Bends</TableHead>
+              <TableHead className="w-16 text-right">Ded.</TableHead>
+              <TableHead className="w-20 text-right">Cut (mm)</TableHead>
+              <TableHead className="w-24 text-right">Length (m)</TableHead>
+              <TableHead className="w-24 text-right">kg</TableHead>
+              <TableHead className="w-10" />
+            </TableRow>
           </TableHeader>
           <TableBody>
-            {components.map((component, cIndex) => (
-              <React.Fragment key={component.id}>
-                {!isOpen(component) ? (
-                <TableRow className="cursor-pointer hover:bg-muted/30" onClick={() => setExpandedId(component.id)}>
-                   <TableCell className="font-bold text-center">{cIndex + 1}</TableCell>
-                   <TableCell colSpan={13}>
-                     <div className="flex items-center gap-4 text-sm">
-                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                       <span className="font-bold w-24">{component.name}</span>
-                       <span className="text-muted-foreground w-16">{component.componentType}</span>
-                       <span className="font-mono text-xs">{component.spanX} × {component.spanY} × {component.depth ?? '-'}</span>
-                       {component.runId && <span className="px-1 rounded bg-blue-100 text-blue-700 text-xs">Run {component.runId} · {component.runPosition}</span>}
-                       <span className="ml-auto text-muted-foreground">{component.bars.length} bars</span>
-                       <span className="font-mono w-24 text-right">{component.bars.reduce((kg, b) => kg + (b.calculated?.totalWeight ?? 0), 0).toFixed(1)} kg</span>
-                     </div>
-                   </TableCell>
-                </TableRow>
-                ) : (<>
-                {/* Component Header Row */}
-                <TableRow className="bg-muted/20 pointer-events-none group">
-                   <TableCell className="font-bold text-center align-top pt-4">{cIndex + 1}</TableCell>
-                   <TableCell className="align-top pt-4 pointer-events-auto" colSpan={13}> {/* Adjusted colSpan */}
-                     <div className="flex flex-col gap-4 mb-4">
-                       <div className="flex items-center gap-2">
-                         {components.length > 1 && (
-                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpandedId(null)} title="Collapse">
-                             <ChevronDown className="h-4 w-4" />
-                           </Button>
-                         )}
-                         <select
-                           value={component.componentType}
-                           onChange={e => updateComponent(component.id, { componentType: e.target.value as ConcreteComponentType, cover: COMPONENT_COVERS[e.target.value] || 25 })}
-                           className="w-[120px] h-8 rounded border bg-background px-2 text-sm"
-                         >
-                           <option value="SLAB">Slab</option>
-                           <option value="BEAM">Beam</option>
-                           <option value="COLUMN">Column</option>
-                           <option value="FOOTING">Footing</option>
-                         </select>
-                         
-                         <Input 
-                           value={component.name} 
-                           onChange={e => updateComponent(component.id, { name: e.target.value })}
-                           className="w-[120px] h-8 font-bold bg-background" 
-                           placeholder="Name (e.g. S1)"
-                         />
-                         
-                         {component.componentType === 'FOOTING' && (
-                            <Select 
-                              value={component.footingType || 'ISOLATED'}
-                              onValueChange={(v: any) => updateComponent(component.id, { footingType: v })}
-                            >
-                              <SelectTrigger className="w-[140px] h-8 bg-background">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {FOOTING_TYPES.map(t => (
-                                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                         )}
-                         
-                         <Button 
-                           variant="ghost" 
-                           size="sm" 
-                           onClick={() => removeComponent(component.id)}
-                           className="ml-auto text-destructive hover:text-destructive hover:bg-destructive/10"
-                         >
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                       </div>
-                       
-                       <div className="flex gap-4 text-sm bg-background p-2 rounded border w-fit">
-                          <div className="flex items-center gap-2">
-                             <span className="text-muted-foreground">{component.componentType === 'BEAM' ? 'Clear span:' : 'Span X:'}</span>
-                             <Input 
-                               type="number" 
-                               value={component.spanX || ''}
-                               onChange={e => updateComponent(component.id, { spanX: parseFloat(e.target.value) || 0 })}
-                               className="w-[80px] h-7 px-2"
-                             />
-                          </div>
-                          <div className="flex items-center gap-2">
-                             <span className="text-muted-foreground">{component.componentType === 'BEAM' ? 'Width:' : 'Span Y:'}</span>
-                             <Input 
-                               type="number" 
-                               value={component.spanY || ''}
-                               onChange={e => updateComponent(component.id, { spanY: parseFloat(e.target.value) || 0 })}
-                               className="w-[80px] h-7 px-2"
-                             />
-                          </div>
-                          <div className="flex items-center gap-2">
-                             <span className="text-muted-foreground">Depth:</span>
-                             <Input 
-                               type="number" 
-                               value={component.depth || ''}
-                               onChange={e => updateComponent(component.id, { depth: parseFloat(e.target.value) || 0 })}
-                               className="w-[60px] h-7 px-2"
-                             />
-                          </div>
-                          <div className="flex items-center gap-2">
-                             <span className="text-muted-foreground">Cover:</span>
-                             <Input 
-                               type="number" 
-                               value={component.cover || ''}
-                               onChange={e => updateComponent(component.id, { cover: parseFloat(e.target.value) || 0 })}
-                               className="w-[60px] h-7 px-2"
-                             />
-                          </div>
-                       </div>
-                       
-                       {component.componentType === 'BEAM' && (
-                         <div className="flex gap-4 items-center text-xs p-2 bg-muted/10 rounded border w-fit">
-                            <span className="text-muted-foreground">Supports L / R:</span>
-                            <Input type="number" placeholder="L" value={component.beamWidths?.left || ''} className="w-16 h-6 px-1"
-                              onChange={e => updateComponent(component.id, { beamWidths: { ...component.beamWidths || { left:0, right:0, top:0, bottom:0 }, left: parseFloat(e.target.value) || 0 } })} />
-                            <Input type="number" placeholder="R" value={component.beamWidths?.right || ''} className="w-16 h-6 px-1"
-                              onChange={e => updateComponent(component.id, { beamWidths: { ...component.beamWidths || { left:0, right:0, top:0, bottom:0 }, right: parseFloat(e.target.value) || 0 } })} />
-                            {component.runId && (
-                              <span className="ml-2 px-1 rounded bg-blue-100 text-blue-700" title="Continuous run: Full Span bars span every beam in it">
-                                Run {component.runId} · {component.runPosition}/{components.filter(c => c.runId === component.runId).length}
-                              </span>
-                            )}
-                            <span className="text-muted-foreground ml-2" title="Identical beams sharing this entry (Excel col F)">Nos:</span>
-                            <Input type="number" min="1" value={component.elementCount || 1} className="w-14 h-6 px-1"
-                              onChange={e => updateComponent(component.id, { elementCount: parseInt(e.target.value) || 1 })} />
-                         </div>
-                       )}
+            {components.map((component, cIndex) => {
+              const open = isOpen(component);
+              const kg = component.bars.reduce((sum, b) => sum + (b.calculated?.totalWeight ?? 0), 0);
+              const isBeam = component.componentType === 'BEAM';
+              const run = component.runId ? `Run ${component.runId} · ${component.runPosition}/${components.filter(c => c.runId === component.runId).length}` : '';
+              const sides = (key: 'beamWidths' | 'topExtensions', text: string) => (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {text}
+                  {SIDES.map(side => (
+                    <input key={side} type="number" placeholder={side[0].toUpperCase()} value={component[key]?.[side] || ''} aria-label={`${text} ${side}`}
+                      onChange={e => updateComponent(component.id, { [key]: { ...(component[key] || ZERO), [side]: parseFloat(e.target.value) || 0 } })}
+                      className="h-9 w-14 rounded-md border border-input bg-background px-1.5 text-sm text-foreground num focus:outline-none focus:ring-2 focus:ring-ring/60" />
+                  ))}
+                </span>
+              );
 
-                       {/* Row 2: U-Bar Inputs (Only for SLAB) */}
-                       {component.componentType === 'SLAB' && (
-                         <div className="flex flex-col gap-2 mt-2 p-2 bg-muted/10 rounded border text-xs">
-                            <div className="font-semibold text-muted-foreground mb-1">U-Bar Dimensions (Left / Right / Top / Bottom)</div>
-                            
-                            <div className="flex gap-4 items-center">
-                               <span className="w-20 text-muted-foreground">Beam Widths:</span>
-                               <Input 
-                                 placeholder="L"
-                                 type="number" 
-                                 value={component.beamWidths?.left || ''}
-                                 onChange={e => updateComponent(component.id, { 
-                                   beamWidths: { ...component.beamWidths || { left:0, right:0, top:0, bottom:0 }, left: parseFloat(e.target.value) || 0 }
-                                 })}
-                                 className="w-16 h-6 px-1"
-                               />
-                               <Input 
-                                 placeholder="R"
-                                 type="number" 
-                                 value={component.beamWidths?.right || ''}
-                                 onChange={e => updateComponent(component.id, { 
-                                   beamWidths: { ...component.beamWidths || { left:0, right:0, top:0, bottom:0 }, right: parseFloat(e.target.value) || 0 }
-                                 })}
-                                 className="w-16 h-6 px-1"
-                               />
-                               <Input 
-                                 placeholder="T"
-                                 type="number" 
-                                 value={component.beamWidths?.top || ''}
-                                 onChange={e => updateComponent(component.id, { 
-                                   beamWidths: { ...component.beamWidths || { left:0, right:0, top:0, bottom:0 }, top: parseFloat(e.target.value) || 0 }
-                                 })}
-                                 className="w-16 h-6 px-1"
-                               />
-                               <Input 
-                                 placeholder="B"
-                                 type="number" 
-                                 value={component.beamWidths?.bottom || ''}
-                                 onChange={e => updateComponent(component.id, { 
-                                   beamWidths: { ...component.beamWidths || { left:0, right:0, top:0, bottom:0 }, bottom: parseFloat(e.target.value) || 0 }
-                                 })}
-                                 className="w-16 h-6 px-1"
-                               />
-                            </div>
-
-                            <div className="flex gap-4 items-center">
-                               <span className="w-20 text-muted-foreground">Top Ext's:</span>
-                               <Input 
-                                 placeholder="L"
-                                 type="number" 
-                                 value={component.topExtensions?.left || ''}
-                                 onChange={e => updateComponent(component.id, { 
-                                   topExtensions: { ...component.topExtensions || { left:0, right:0, top:0, bottom:0 }, left: parseFloat(e.target.value) || 0 }
-                                 })}
-                                 className="w-16 h-6 px-1"
-                               />
-                               <Input 
-                                 placeholder="R"
-                                 type="number" 
-                                 value={component.topExtensions?.right || ''}
-                                 onChange={e => updateComponent(component.id, { 
-                                   topExtensions: { ...component.topExtensions || { left:0, right:0, top:0, bottom:0 }, right: parseFloat(e.target.value) || 0 }
-                                 })}
-                                 className="w-16 h-6 px-1"
-                               />
-                               <Input 
-                                 placeholder="T"
-                                 type="number" 
-                                 value={component.topExtensions?.top || ''}
-                                 onChange={e => updateComponent(component.id, { 
-                                   topExtensions: { ...component.topExtensions || { left:0, right:0, top:0, bottom:0 }, top: parseFloat(e.target.value) || 0 }
-                                 })}
-                                 className="w-16 h-6 px-1"
-                               />
-                               <Input 
-                                 placeholder="B"
-                                 type="number" 
-                                 value={component.topExtensions?.bottom || ''}
-                                 onChange={e => updateComponent(component.id, { 
-                                   topExtensions: { ...component.topExtensions || { left:0, right:0, top:0, bottom:0 }, bottom: parseFloat(e.target.value) || 0 }
-                                 })}
-                                 className="w-16 h-6 px-1"
-                               />
-                            </div>
-                            
-                             
-                             <details className="mt-2 text-[10px] text-muted-foreground">
-                               <summary className="cursor-pointer hover:text-foreground flex items-center gap-1 w-fit mb-1 select-none">
-                                 <Info className="h-3 w-3" /> <span className="underline decoration-dotted">Show Calculation Logic</span>
-                               </summary>
-                               <div className="p-2 rounded border border-blue-100 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20 grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
-                                 <div><span className="font-mono">a</span> = Span</div>
-                                 <div className="col-span-2"><span className="font-mono">b, d</span> = Beam Width - Cover (Start/End)</div>
-                                 <div className="col-span-2"><span className="font-mono">c</span> = Depth - 2 × Cover (Vertical)</div>
-                                 <div className="col-span-2"><span className="font-mono">e, f</span> = Top Extensions (Left/Right)</div>
-                               </div>
-                             </details>
-                          </div>
-                        )}
-                     </div>
-                   </TableCell>
-                </TableRow>
-                
-                {/* Bar Entries */}
-                {component.bars.map((bar) => (
-                  <TableRow key={bar.id} className="hover:bg-muted/5 border-b-0">
-                    <TableCell></TableCell>
-                    <TableCell>
-                       <div className="space-y-1">
-                          <select
-                             value={bar.barType}
-                             onChange={e => updateBarEntry(component.id, bar.id, { barType: e.target.value })}
-                             className="h-8 w-full text-xs bg-transparent hover:bg-muted/50 px-2 font-medium rounded"
-                          >
-                             {!BAR_TYPES[component.componentType]?.includes(bar.barType) && bar.barType !== 'Custom' && <option value={bar.barType}>{bar.barType}</option>}
-                             {BAR_TYPES[component.componentType]?.map(t => <option key={t} value={t}>{t}</option>)}
-                             <option value="Custom">Custom</option>
+              return (
+                <React.Fragment key={component.id}>
+                  {/* Member row: collapsed summary, or the toolbar when open */}
+                  <TableRow
+                    className={open ? 'bg-muted/30 hover:bg-muted/30' : 'cursor-pointer hover:bg-muted/40'}
+                    onClick={open ? undefined : () => setExpandedId(component.id)}
+                  >
+                    <TableCell className="num font-medium text-muted-foreground">{cIndex + 1}</TableCell>
+                    {open ? (
+                      <TableCell colSpan={21} className="py-2">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                          <Button variant="ghost" size="icon-sm" onClick={() => setExpandedId(null)} aria-label="Collapse member"
+                            className={components.length > 1 ? '' : 'invisible'}>
+                            <ChevronDown />
+                          </Button>
+                          <select value={component.componentType} aria-label="Member type" className={`${SELECT} w-28`}
+                            onChange={e => updateComponent(component.id, { componentType: e.target.value as ConcreteComponentType, cover: COMPONENT_COVERS[e.target.value] || 25 })}>
+                            <option value="SLAB">Slab</option>
+                            <option value="BEAM">Beam</option>
+                            <option value="COLUMN">Column</option>
+                            <option value="FOOTING">Footing</option>
                           </select>
-                          <div className="flex gap-2 px-2">
-                             <div 
-                               className={`text-[10px] px-1 rounded cursor-pointer ${bar.direction === 'X' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}
-                               onClick={() => updateBarEntry(component.id, bar.id, { direction: 'X' })}
-                             >X-Dir</div>
-                             <div 
-                               className={`text-[10px] px-1 rounded cursor-pointer ${bar.direction === 'Y' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}
-                               onClick={() => updateBarEntry(component.id, bar.id, { direction: 'Y' })}
-                             >Y-Dir</div>
-                          </div>
-                       </div>
-                    </TableCell>
-                    <TableCell className="text-center text-xs">
-                        {/* Show relevant span based on direction (opposite span governs quantity) */}
-                        <div className="flex flex-col gap-1">
-                          <div className="text-muted-foreground">
-                            {bar.direction === 'X' ? `Y: ${component.spanY}` : `X: ${component.spanX}`}
-                          </div>
-                          {/* Section Span override */}
-                          {/* Section Span 1 (Length) */}
-                           <Input 
-                             type="number"
-                             placeholder="Len"
-                             value={bar.section_span_1 || ''}
-                             onChange={e => updateBarEntry(component.id, bar.id, { section_span_1: parseFloat(e.target.value) || undefined })}
-                             className="h-6 text-xs text-center border bg-background/50 hover:bg-background"
-                             title="Override Length Span (calculations a,b,c...)"
-                           />
-                           {/* Section Span 2 (Dist) */}
-                           <Input 
-                             type="number"
-                             placeholder="Dist"
-                             value={bar.section_span_2 || ''}
-                             onChange={e => updateBarEntry(component.id, bar.id, { section_span_2: parseFloat(e.target.value) || undefined })}
-                             className="h-6 text-xs text-center border bg-background/50 hover:bg-background"
-                             title="Override Distribution Span (calculates Total Members)"
-                           />
-                         </div>
-                    </TableCell>
-                    <TableCell>
-                       <Input 
-                         type="number" 
-                         value={bar.spacing || ''} 
-                         onChange={e => updateBarEntry(component.id, bar.id, { spacing: parseInt(e.target.value) || 0 })}
-                         className="h-8 text-center border-0 bg-transparent hover:bg-muted/50"
-                       />
-                    </TableCell>
-                    <TableCell>
-                       <select
-                         value={bar.diameter || 8}
-                         onChange={e => updateBarEntry(component.id, bar.id, { diameter: parseInt(e.target.value) })}
-                         className="h-8 w-full text-center bg-transparent hover:bg-muted/50 rounded"
-                       >
-                         {[8, 10, 12, 16, 20, 25, 32].map(d => <option key={d} value={d}>{d} mm</option>)}
-                       </select>
-                    </TableCell>
-                    <TableCell>
-                       <Input 
-                         type="number" 
-                         value={bar.barsPerMember || 1} 
-                         onChange={e => updateBarEntry(component.id, bar.id, { barsPerMember: parseInt(e.target.value) || 1 })}
-                         className="h-8 text-center border-0 bg-transparent hover:bg-muted/50 w-full"
-                       />
-                    </TableCell>
-                    
-                    {/* Removed Duplicate Dia and Bars/Memb Cells */}
-                    
-                    {/* Total no. of members Reqd (Excel col H) — typed value overrides the formula */}
-                    <TableCell className="text-center">
-                       <Input
-                         type="number"
-                         min="0"
-                         className="h-8 text-center border-0 bg-transparent hover:bg-muted/50 font-mono text-primary"
-                         value={bar.totalMembers ?? (bar.calculated ? bar.calculated.noOfBars / (bar.barsPerMember || 1) / (component.elementCount || 1) : '')}
-                         onChange={e => updateBarEntry(component.id, bar.id, { totalMembers: e.target.value === '' ? undefined : parseInt(e.target.value) || 0 })}
-                         title="Members (Excel col H). Clear to use the formula."
-                       />
-                    </TableCell>
-                    
-                    {/* Total nos. (Excel col I) */}
-                    <TableCell className="text-center font-mono font-bold text-primary">
-                       {bar.calculated ? bar.calculated.noOfBars : '-'}
-                    </TableCell>
-                    
-                    {/* Measurements Inputs a-f + lap + calculated fields */}
-                    <TableCell className="border-l border-r p-0">
-                       <div className="grid grid-cols-10 h-full">
-                         {/* Input fields: a, b, c, d, e, f, lap */}
-                         {['a','b','c','d','e','f','lap'].map((key) => (
-                           <input
-                             key={key}
-                             type="number"
-                             placeholder="-"
-                             className="w-full h-full min-h-[40px] text-center border-r bg-transparent focus:bg-background focus:outline-none focus:ring-1 focus:ring-inset text-xs"
-                             value={bar.measurements[key as keyof BarMeasurements] || ''}
-                             onChange={e => updateBarMeasurements(component.id, bar.id, key as keyof BarMeasurements, parseFloat(e.target.value) || 0)}
-                           />
-                         ))}
-                         
-                         {/* Calculated field: Total (Excel col Q = SUM(a..lap)) */}
-                         <div className="w-full h-full min-h-[40px] flex items-center justify-center border-r bg-muted/20 text-xs font-mono font-medium text-primary">
-                           {bar.calculated ? bar.calculated.totalMeasurement : '-'}
-                         </div>
-                         
-                         {/* Calculated field: No of Bends */}
-                         <div 
-                           className="w-full h-full min-h-[40px] flex items-center justify-center border-r bg-muted/20 text-xs font-mono font-medium text-primary cursor-help hover:bg-muted/30"
-                           title={`Number of Bends:
-Bar Type: ${bar.barType}
-Auto-detected: ${bar.calculated ? bar.calculated.noOfDeductions : 0} bends
-Based on bar shape and segments`}
-                         >
-                           {bar.calculated ? bar.calculated.noOfDeductions : '-'}
-                         </div>
-                         
-                         {/* Calculated field: Deduction (No of Bends * Dia * 2) */}
-                         <div 
-                           className="w-full h-full min-h-[40px] flex items-center justify-center bg-muted/20 text-xs font-mono font-medium text-primary cursor-help hover:bg-muted/30"
-                           title={`Deduction Calculation:
-Formula: No of Bends × Diameter × 2
-No of Bends: ${bar.calculated ? bar.calculated.noOfDeductions : 0}
-Diameter: ${bar.diameter}mm
-Result: ${bar.calculated ? bar.calculated.noOfDeductions : 0} × ${bar.diameter} × 2 = ${bar.calculated ? bar.calculated.deductionAmount : 0}mm`}
-                         >
-                           {bar.calculated ? bar.calculated.deductionAmount : '-'}
-                         </div>
-                       </div>
-                    </TableCell>
-                    
-                    {/* Cut Length (Excel col T) */}
-                    <TableCell className="text-center font-mono font-medium">
-                      {bar.calculated ? `${bar.calculated.cuttingLength}mm` : '-'}
-                    </TableCell>
-                    
-                    {/* Total Length (Excel col U) */}
-                    <TableCell className="text-center font-mono font-medium">
-                      {bar.calculated ? `${bar.calculated.totalLength.toFixed(3)}m` : '-'}
-                    </TableCell>
-                    
-                    {/* Bends Input (with auto-calculation) */}
-                    <TableCell>
-                       <Input 
-                         type="number"
-                         min="0"
-                         className="h-8 w-full text-center border-0 bg-transparent hover:bg-muted/50 p-0"
-                         value={bar.manualNoOfDeductions || (bar.calculated ? bar.calculated.noOfDeductions : '')}
-                         onChange={e => updateBarEntry(component.id, bar.id, { manualNoOfDeductions: parseInt(e.target.value) || 0 })}
-                         placeholder={bar.calculated ? bar.calculated.noOfDeductions.toString() : "Auto"}
-                       />
-                    </TableCell>
-
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeBarEntry(component.id, bar.id)}>
-                        <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                      </Button>
-                    </TableCell>
+                          <Input value={component.name} onChange={e => updateComponent(component.id, { name: e.target.value })}
+                            placeholder="Mark (B1, S3)" aria-label="Member name" className="h-9 w-36 font-semibold" />
+                          {component.componentType === 'FOOTING' && (
+                            <select value={component.footingType || 'ISOLATED'} aria-label="Footing type" className={SELECT}
+                              onChange={e => updateComponent(component.id, { footingType: e.target.value as ConcreteComponent['footingType'] })}>
+                              {FOOTING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          )}
+                          <Dim label={isBeam ? 'Clear span' : 'Span X'} value={component.spanX} onChange={n => updateComponent(component.id, { spanX: n })} />
+                          <Dim label={isBeam ? 'Width' : 'Span Y'} value={component.spanY} onChange={n => updateComponent(component.id, { spanY: n })} />
+                          <Dim label="Depth" value={component.depth} onChange={n => updateComponent(component.id, { depth: n })} width="w-16" />
+                          <Dim label="Cover" value={component.cover} onChange={n => updateComponent(component.id, { cover: n })} width="w-16" />
+                          {isBeam && (
+                            <>
+                              <Dim label="Support L" value={component.beamWidths?.left} width="w-16"
+                                onChange={n => updateComponent(component.id, { beamWidths: { ...(component.beamWidths || ZERO), left: n } })} />
+                              <Dim label="Support R" value={component.beamWidths?.right} width="w-16"
+                                onChange={n => updateComponent(component.id, { beamWidths: { ...(component.beamWidths || ZERO), right: n } })} />
+                              <Dim label="Nos" value={component.elementCount || 1} width="w-14"
+                                onChange={n => updateComponent(component.id, { elementCount: n || 1 })} />
+                              {run && <span className="rounded bg-accent px-1.5 py-0.5 text-xs text-accent-foreground">{run}</span>}
+                            </>
+                          )}
+                          {component.componentType === 'SLAB' && (
+                            <>
+                              {sides('beamWidths', 'Beam widths')}
+                              {sides('topExtensions', 'Top ext')}
+                            </>
+                          )}
+                          <Button variant="ghost" size="icon-sm" onClick={() => removeComponent(component.id)} aria-label="Delete member"
+                            className="ml-auto text-muted-foreground hover:text-destructive">
+                            <Trash2 />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    ) : (
+                      <>
+                        <TableCell className="font-semibold">
+                          {component.name} <span className="ml-1 font-normal text-muted-foreground">{component.componentType.toLowerCase()}</span>
+                        </TableCell>
+                        <TableCell colSpan={18} className="text-muted-foreground">
+                          {component.spanX} × {component.spanY} × {component.depth ?? '–'}
+                          {run && <span className="ml-3 rounded bg-accent px-1.5 py-0.5 text-xs text-accent-foreground">{run}</span>}
+                          <span className="ml-3">{component.bars.length} bars</span>
+                        </TableCell>
+                        <TableCell className="num">{fmt(kg, 2)}</TableCell>
+                        <TableCell><ChevronRight className="h-4 w-4 text-muted-foreground" /></TableCell>
+                      </>
+                    )}
                   </TableRow>
-                ))}
-                
-                {/* Add Bar Button Row */}
-                <TableRow className="border-b-4 border-double">
-                   <TableCell></TableCell>
-                   <TableCell colSpan={11}>
-                     <Button 
-                       variant="ghost" 
-                       size="sm" 
-                       className="text-xs text-muted-foreground hover:text-primary"
-                       onClick={() => addBarEntry(component.id)}
-                     >
-                       <Plus className="h-3 w-3 mr-1" /> Add Bar Row
-                     </Button>
-                   </TableCell>
-                </TableRow>
-                </>)}
-              </React.Fragment>
-            ))}
+
+                  {/* Bar rows */}
+                  {open && component.bars.map(bar => {
+                    const c = bar.calculated;
+                    return (
+                      <TableRow key={bar.id} className="hover:bg-muted/20 [&>td]:px-1 [&>td]:py-1">
+                        <TableCell />
+                        <TableCell className="px-2!">
+                          <select value={bar.barType} aria-label="Bar type" className="h-9 w-full rounded-sm bg-transparent px-1 text-sm font-medium focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring/60"
+                            onChange={e => updateBarEntry(component.id, bar.id, { barType: e.target.value })}>
+                            {!BAR_TYPES[component.componentType]?.includes(bar.barType) && bar.barType !== 'Custom' && <option value={bar.barType}>{bar.barType}</option>}
+                            {BAR_TYPES[component.componentType]?.map(t => <option key={t} value={t}>{t}</option>)}
+                            <option value="Custom">Custom</option>
+                          </select>
+                          {!isBeam && (
+                            <div className="mt-1 flex gap-1 px-1" role="group" aria-label="Direction">
+                              {(['X', 'Y'] as const).map(d => (
+                                <button key={d} type="button" aria-pressed={bar.direction === d}
+                                  onClick={() => updateBarEntry(component.id, bar.id, { direction: d })}
+                                  className={`h-6 rounded border px-1.5 text-[11px] ${bar.direction === d ? 'border-primary bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}>
+                                  {d}-dir
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="num text-xs text-muted-foreground">{bar.direction === 'X' ? component.spanY : component.spanX}</div>
+                          <div className="mt-0.5 grid grid-cols-2 gap-0.5">
+                            <input type="number" placeholder="Len" aria-label="Length span override" value={bar.section_span_1 || ''} className={`${CELL} h-7 text-xs`}
+                              onChange={e => updateBarEntry(component.id, bar.id, { section_span_1: parseFloat(e.target.value) || undefined })} />
+                            <input type="number" placeholder="Dist" aria-label="Distribution span override" value={bar.section_span_2 || ''} className={`${CELL} h-7 text-xs`}
+                              onChange={e => updateBarEntry(component.id, bar.id, { section_span_2: parseFloat(e.target.value) || undefined })} />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <select value={bar.diameter || 8} aria-label="Diameter" className={`${CELL} text-right`}
+                            onChange={e => updateBarEntry(component.id, bar.id, { diameter: parseInt(e.target.value) })}>
+                            {[8, 10, 12, 16, 20, 25, 32].map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </TableCell>
+                        <TableCell>
+                          <input type="number" aria-label="Spacing" value={bar.spacing || ''} className={CELL}
+                            onChange={e => updateBarEntry(component.id, bar.id, { spacing: parseInt(e.target.value) || 0 })} />
+                        </TableCell>
+                        <TableCell>
+                          <input type="number" aria-label="Bars per member" value={bar.barsPerMember || 1} className={CELL}
+                            onChange={e => updateBarEntry(component.id, bar.id, { barsPerMember: parseInt(e.target.value) || 1 })} />
+                        </TableCell>
+                        <TableCell>
+                          <input type="number" min="0" aria-label="Members" title="Excel col H. Clear to use the formula."
+                            value={bar.totalMembers ?? (c ? c.noOfBars / (bar.barsPerMember || 1) / (component.elementCount || 1) : '')}
+                            className={`${CELL} ${bar.totalMembers !== undefined ? 'text-foreground' : 'text-primary'}`}
+                            onChange={e => updateBarEntry(component.id, bar.id, { totalMembers: e.target.value === '' ? undefined : parseInt(e.target.value) || 0 })} />
+                        </TableCell>
+                        <TableCell className="num font-medium">{c ? c.noOfBars : ''}</TableCell>
+                        {(['a', 'b', 'c', 'd', 'e', 'f', 'lap'] as const).map(key => (
+                          <TableCell key={key}>
+                            <input type="number" placeholder="–" aria-label={`Leg ${key}`} value={bar.measurements[key] || ''} className={CELL}
+                              onChange={e => updateBarMeasurements(component.id, bar.id, key, parseFloat(e.target.value) || 0)} />
+                          </TableCell>
+                        ))}
+                        <TableCell className="num">{c ? showMm(c.totalMeasurement) : ''}</TableCell>
+                        <TableCell>
+                          <input type="number" min="0" aria-label="Bends" placeholder={c ? String(c.noOfDeductions) : ''}
+                            value={bar.manualNoOfDeductions ?? ''} className={`${CELL} placeholder:text-primary`}
+                            onChange={e => updateBarEntry(component.id, bar.id, { manualNoOfDeductions: e.target.value === '' ? undefined : parseInt(e.target.value) || 0 })} />
+                        </TableCell>
+                        <TableCell className="num">{c ? c.deductionAmount : ''}</TableCell>
+                        <TableCell className="num font-medium">{c ? showMm(c.cuttingLength) : ''}</TableCell>
+                        <TableCell className="num">{c ? c.totalLength.toFixed(3) : ''}</TableCell>
+                        <TableCell className="num">{c ? fmt(c.totalWeight, 2) : ''}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon-sm" onClick={() => removeBarEntry(component.id, bar.id)} aria-label="Delete bar"
+                            className="text-muted-foreground hover:text-destructive">
+                            <Trash2 />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+
+                  {open && (
+                    <TableRow className="border-b-2 hover:bg-transparent">
+                      <TableCell />
+                      <TableCell colSpan={21}>
+                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => addBarEntry(component.id)}>
+                          <Plus /> Add bar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </TableBody>
         </Table>
-        
+
         {components.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-             <p>No components added yet.</p>
-             <Button onClick={addComponent} className="mt-4">
-               <Plus className="h-4 w-4 mr-2" /> Add First Component
-             </Button>
+          <div className="px-6 py-14 text-center text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">No members yet.</p>
+            <p className="mx-auto mt-1 max-w-md">Add a slab panel or beam and enter its bars, or use Import BBS Excel above to load an issued BBS or a beam schedule.</p>
+            <Button className="mt-4" onClick={addComponent}><Plus /> Add member</Button>
           </div>
         )}
       </div>
 
-      <div className="flex justify-between items-center">
-         <Button onClick={addComponent} variant="outline">
-           <Plus className="h-4 w-4 mr-2" /> Add Component
-         </Button>
+      <div className="flex items-start justify-between gap-6">
+        <Button variant="outline" onClick={addComponent}><Plus /> Add member</Button>
+        <TotalSteelWeight summary={projectSummary} />
       </div>
-      
-      {/* 3. Summary Footer */}
-      <TotalSteelWeight summary={projectSummary} />
     </div>
   );
 }

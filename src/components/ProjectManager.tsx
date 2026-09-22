@@ -8,10 +8,11 @@ type ViewMode = 'list' | 'create' | 'edit';
 
 interface ProjectManagerProps {
   onProjectSelected?: (projectId: string, config: ProjectConfig, bars: BarEntry[]) => void;
+  initialMode?: ViewMode; // "New project" from the dashboard lands straight on the form
 }
 
-export function ProjectManager({ onProjectSelected }: ProjectManagerProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+export function ProjectManager({ onProjectSelected, initialMode = 'list' }: ProjectManagerProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>(initialMode);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingConfig, setEditingConfig] = useState<ProjectConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,23 +28,6 @@ export function ProjectManager({ onProjectSelected }: ProjectManagerProps) {
     setError(null);
   };
 
-  const handleEditProject = async (projectId: string) => {
-    try {
-      const result = loadFromLocalStorage(projectId);
-      
-      if (result.success && result.data) {
-        setEditingProjectId(projectId);
-        setEditingConfig(result.data.config);
-        setViewMode('edit');
-        setError(null);
-      } else {
-        setError(result.error || 'Failed to load project for editing');
-      }
-    } catch (err) {
-      setError('An unexpected error occurred while loading the project');
-    }
-  };
-
   const handleOpenProject = async (projectId: string) => {
     try {
       const result = loadFromLocalStorage(projectId);
@@ -55,7 +39,7 @@ export function ProjectManager({ onProjectSelected }: ProjectManagerProps) {
       } else {
         setError(result.error || 'Failed to open project');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred while opening the project');
     }
   };
@@ -99,7 +83,7 @@ export function ProjectManager({ onProjectSelected }: ProjectManagerProps) {
       } else {
         setError(saveResult.error || 'Failed to save project');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred while saving the project');
     }
   };
@@ -112,17 +96,12 @@ export function ProjectManager({ onProjectSelected }: ProjectManagerProps) {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {error && (
-        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-          <p className="text-destructive text-sm">{error}</p>
-        </div>
-      )}
+    <div>
+      {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
       {viewMode === 'list' && (
         <ProjectListView
           onCreateProject={handleCreateProject}
-          onEditProject={handleEditProject}
           onOpenProject={handleOpenProject}
         />
       )}

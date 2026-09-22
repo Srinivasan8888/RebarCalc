@@ -1,57 +1,50 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ProjectSteelSummary } from '@/types/component-types';
-import { Scale } from 'lucide-react';
+import { fmt } from '@/lib/utils';
 
 interface TotalSteelWeightProps {
   summary?: ProjectSteelSummary;
-  manualTotalWeight?: number; // Support for manual mode totals too if needed
+  manualTotalWeight?: number; // Manual mode has no dia breakdown
 }
 
+/** The sheet's "TOTAL in Kg / MT" block: one row per diameter, a total row. */
 export function TotalSteelWeight({ summary, manualTotalWeight }: TotalSteelWeightProps) {
-  
   if (!summary && manualTotalWeight === undefined) return null;
 
-  // Use summary if available, otherwise manual total
   const totalKg = summary ? summary.totalWeightKg : (manualTotalWeight || 0);
-  const totalMT = totalKg / 1000;
+  const rows = summary
+    ? Object.entries(summary.byDiameter).filter(([, d]) => d.weightKg > 0.001).sort(([a], [b]) => +a - +b)
+    : [];
 
   return (
-    <Card className="border-2 border-primary/20 shadow-sm">
-      <CardHeader className="pb-2 bg-muted/20">
-        <CardTitle className="text-lg flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Scale className="h-5 w-5 text-primary" />
-            <span>Total Steel Weight</span>
-          </div>
-          <div className="text-2xl font-bold text-primary">
-            {totalKg.toFixed(2)} kg
-            <span className="text-sm font-normal text-muted-foreground ml-2">
-              ({totalMT.toFixed(3)} MT)
-            </span>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      
-      {summary && (
-        <CardContent className="pt-4">
-          <div className="text-sm font-medium text-muted-foreground mb-3">Breakdown by Diameter:</div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {Object.entries(summary.byDiameter).map(([diameter, data]) => {
-              const dia = parseInt(diameter);
-              if (data.weightKg <= 0.001) return null;
-              
-              return (
-                <div key={dia} className="flex flex-col p-3 bg-muted/10 rounded-md border text-center">
-                  <span className="font-bold text-lg">{dia}mm</span>
-                  <span className="text-sm text-foreground/80">{data.weightKg.toFixed(2)} kg</span>
-                  <span className="text-xs text-muted-foreground">{data.lengthM.toFixed(1)} m</span>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      )}
-    </Card>
+    <section aria-label="Steel totals" className="w-full max-w-md overflow-hidden rounded-md border text-sm">
+      <table className="w-full">
+        <thead className="bg-muted/60 text-xs text-muted-foreground">
+          <tr>
+            <th className="px-3 py-2 text-left font-medium">Dia</th>
+            <th className="num px-3 py-2 font-medium">Length (m)</th>
+            <th className="num px-3 py-2 font-medium">Weight (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([dia, d]) => (
+            <tr key={dia} className="border-t">
+              <td className="px-3 py-1.5">{dia} mm</td>
+              <td className="num px-3 py-1.5">{fmt(d.lengthM, 2)}</td>
+              <td className="num px-3 py-1.5">{fmt(d.weightKg, 2)}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="border-t bg-muted/40 font-semibold">
+            <td className="px-3 py-2">Total</td>
+            <td />
+            <td className="num px-3 py-2">
+              {fmt(totalKg, 2)} kg
+              <span className="ml-2 font-normal text-muted-foreground">{(totalKg / 1000).toFixed(3)} MT</span>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
   );
 }
