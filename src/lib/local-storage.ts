@@ -272,34 +272,3 @@ function removeFromProjectList(id: string): void {
   
   localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(filteredList));
 }
-
-/**
- * Clears all project data from local storage (for cleanup/reset)
- */
-export function clearAllProjects(): StorageResult<void> {
-  if (!isLocalStorageAvailable()) {
-    return {
-      success: false,
-      error: 'Local storage is not available.'
-    };
-  }
-
-  try {
-    // Get all project keys
-    const keys = Object.keys(localStorage).filter(key => key.startsWith(PROJECT_KEY_PREFIX));
-    
-    // Remove all project data
-    keys.forEach(key => localStorage.removeItem(key));
-    
-    // Clear project list
-    localStorage.removeItem(PROJECT_LIST_KEY);
-    
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    return {
-      success: false,
-      error: `Failed to clear projects: ${errorMessage}`
-    };
-  }
-}

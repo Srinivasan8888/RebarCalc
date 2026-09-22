@@ -143,24 +143,6 @@ export const DEVELOPMENT_LENGTH_TABLES = {
   M40: generateLdTable(LD_FACTORS.M40),
 };
 
-// Development length table (Ld) per diameter for M30 concrete
-// Maintained for backward compatibility
-export const DEVELOPMENT_LENGTH_M30 = DEVELOPMENT_LENGTH_TABLES.M30;
-
-// Weight per meter for each diameter (kg/m)
-// Formula: D² / 162
-export const WEIGHT_PER_METER: Record<number, number> = {
-  6: 0.222,
-  8: 0.395,
-  10: 0.617,
-  12: 0.889,
-  14: 1.21,
-  16: 1.58,
-  20: 2.47,
-  25: 3.85,
-  32: 6.31,
-};
-
 // Default covers by component type (IS code)
 export const COMPONENT_COVERS: Record<string, number> = {
   SLAB: 20,
@@ -172,42 +154,49 @@ export const COMPONENT_COVERS: Record<string, number> = {
 // Bar types/Descriptions for each component
 export const BAR_TYPES = {
   SLAB: [
-    // Bottom Main Bars
     'Bottom Bar (X-X)',
     'Bottom Bar (Y-Y)',
     'Bottom Bar (X-X) Full Span',
     'Bottom Bar (Y-Y) Full Span',
-    // Bottom Distribution Bars
     'Bottom Bar Dist (X-X)',
     'Bottom Bar Dist (Y-Y)',
-    // Top Main Bars
+    'Top Main Bar (X-X) - Left',
+    'Top Main Bar (X-X) - Right',
+    'Top Main Bar (X-X) - Left & Right',
+    'Top Main Bar (Y-Y) - Top',
+    'Top Main Bar (Y-Y) - Bottom',
+    'Top Main Bar (Y-Y) - Top & Bottom',
+    'Top Dist Bar (X-X) - Left',
+    'Top Dist Bar (X-X) - Right',
+    'Top Dist Bar (X-X) - Left & Right',
+    'Top Dist Bar (Y-Y) - Top',
+    'Top Dist Bar (Y-Y) - Bottom',
+    'Top Dist Bar (Y-Y) - Top & Bottom',
     'Top Bar (X-X)',
     'Top Bar (Y-Y)',
     'Top Bar (X-X) Full Span',
     'Top Bar (Y-Y) Full Span',
-    'Top Main Bar (X-X)',
-    'Top Main Bar (Y-Y)',
-    // Top Distribution Bars
-    'Top Dist Bar (X-X)',
-    'Top Dist Bar (Y-Y)',
-    'Top Bar Dist (X-X)',
-    'Top Bar Dist (Y-Y)',
-    // Combined Bars
     'Bottom & Top Bar (X-X)',
     'Bottom & Top Bar (Y-Y)',
-    'Top & Bottom Bar (X-X)',
-    'Top & Bottom Bar (Y-Y)',
-    // Special Bars
     'Extra Top',
     'Extra Bottom',
     'Chair Bar',
   ],
   BEAM: [
-    'Top Bar',
-    'Bottom Bar',
-    'Side Face Bar',
-    'Stirrups',
-    'Extra Bar',
+    'Span_Top - Layer 1',
+    'Span_Top - Layer 2',
+    'Span_Bottom - Layer 1',
+    'Span_Bottom - Layer 2',
+    'Span_Bottom _Curtail',
+    'Top Extra - Layer 2 - Left',
+    'Top Extra - Layer 2 - Right',
+    'Top Extra - Layer 2 - Left & Right',
+    'Side Face Steel',
+    'Stirrups - Full',
+    'Stirrups - Left',
+    'Stirrups - Middle',
+    'Stirrups - Right',
+    'Stirrups - L & R',
   ],
   COLUMN: [
     'Main Bar',

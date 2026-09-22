@@ -1,6 +1,4 @@
 // Concrete component types matching BBS spreadsheet format
-export const COMPONENT_TYPES_VERSION = '1.0.0'; // Runtime export to ensure module resolution
-
 export type ConcreteComponentType = 'BEAM' | 'COLUMN' | 'SLAB' | 'FOOTING';
 
 // Footing subtypes (pile variants)
@@ -10,12 +8,6 @@ export type FootingType = 'ISOLATED' | 'COMBINED' | 'PILE_CYLINDER' | 'PILE_CUBO
 export type ConcreteGrade = 'M20' | 'M25' | 'M30' | 'M35' | 'M40';
 export type SteelGrade = 'Fe415' | 'Fe500' | 'Fe550';
 
-// Development length table (Ld values based on grade)
-// Key is diameter (number), Value is Ld (number)
-export interface DevelopmentLengthTable {
-  [diameter: number]: number;
-}
-
 // Project Metadata (User Input)
 export interface BBSMetadata {
   projectName: string;
@@ -23,8 +15,9 @@ export interface BBSMetadata {
   itemDescription: string;         // e.g., "20th Floor Slab Reinforcement"
   concreteGrade: ConcreteGrade;
   steelGrade: SteelGrade;
-  developmentLengths?: any;        // Development length tables
+  developmentLengths?: Record<number, number>; // Ld per diameter (slab sheet F2:L3, beam sheet W3:AC4)
   standardBarLength?: number;      // Standard bar length in mm
+  curtailOffset?: number;          // Beam sheet R8 "Bottom curtainment spacing" (mm)
 }
 
 // Component definition (like "A1 (B1 - 3H)" in the image)
@@ -42,6 +35,13 @@ export interface ConcreteComponent {
   
   // Cover settings
   cover: number;                   // mm
+
+  // Beam sheet col F "Element": identical members sharing this entry (multiplies every bar count)
+  elementCount?: number;
+
+  // Continuous run (beam sheet: one S.No over B1,B2,B3 sharing a Full Span bar); position 1..n left→right
+  runId?: string;
+  runPosition?: number;
 
   // New fields for Slab U-Bar Automation
   beamWidths?: {
@@ -117,15 +117,6 @@ export interface ComponentBarEntry {
   
   // Calculated results (populated by calculator)
   calculated?: CalculatedBarResult;
-}
-
-// Summary for entire component
-export interface ComponentSummary {
-  componentId: string;
-  componentName: string;
-  totalBars: number;
-  totalLengthM: number;
-  totalWeightKg: number;
 }
 
 // Grand total for project

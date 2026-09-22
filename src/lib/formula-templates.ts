@@ -203,18 +203,3 @@ export const FORMULA_TEMPLATES: Record<ShapeCode, FormulaTemplate> = {
     ]
   }
 };
-
-// Helper function to get formula template by shape code
-export function getFormulaTemplate(shapeCode: ShapeCode): FormulaTemplate {
-  return FORMULA_TEMPLATES[shapeCode];
-}
-
-// Helper function to get all available formula templates
-export function getAllFormulaTemplates(): FormulaTemplate[] {
-  return Object.values(FORMULA_TEMPLATES);
-}
-
-// Helper function to validate if a shape code has a formula template
-export function hasFormulaTemplate(shapeCode: string): shapeCode is ShapeCode {
-  return shapeCode in FORMULA_TEMPLATES;
-}

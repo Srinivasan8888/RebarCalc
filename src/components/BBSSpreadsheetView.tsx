@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, Info } from 'lucide-react';
+import { Plus, Trash2, Info, ChevronRight, ChevronDown } from 'lucide-react';
 import type { 
   ConcreteComponent, 
   ConcreteComponentType, 
@@ -23,15 +23,8 @@ import {
 // ... (existing imports)
 
 
-import { 
-  calculateComponentBarEntry
-} from '@/lib/component-calculator';
-import { 
-  calculateProjectTotal, 
-  calculateBarMeasurementsAuto,
-  calculateBarsPerMember,
-  calculateCutLengthByBarType
-} from '@/lib/enhanced-calculator';
+import { recalculateComponents } from '@/lib/component-calculator';
+import { calculateProjectTotal, calculateBarMeasurementsAuto } from '@/lib/enhanced-calculator';
 import { TotalSteelWeight } from './TotalSteelWeight';
 import { ComponentFormulaTooltip } from './ComponentFormulaTooltip';
 
@@ -62,6 +55,11 @@ export function BBSSpreadsheetView({
     }
   }, []);
 
+  // Only one component renders its card and bar rows at a time; the rest are one summary row each.
+  // ponytail: a 369-beam import was ~40k DOM nodes and froze the tab — collapse beats virtualisation here.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const isOpen = (c: ConcreteComponent) => components.length === 1 || expandedId === c.id;
+
   const handleMetadataChange = (field: keyof BBSMetadata, value: string) => {
     if (metadata) {
       onMetadataChange({ ...metadata, [field]: value });
@@ -75,7 +73,8 @@ export function BBSSpreadsheetView({
       componentType: 'SLAB', // Default
       spanX: 3000,
       spanY: 3000,
-      cover: 20,
+      depth: 125,
+      cover: 30,
       bars: []
     };
     onComponentsChange([...components, newComponent]);
@@ -92,18 +91,19 @@ export function BBSSpreadsheetView({
     
     if (dimensionsChanged) {
       const component = updated.find(c => c.id === id);
-      if (component && component.componentType === 'SLAB' && component.beamWidths && component.topExtensions) {
-        // Recalculate measurements for all bars in this component
+      if (component && (component.componentType === 'BEAM' || (component.componentType === 'SLAB' && component.beamWidths && component.topExtensions))) {
+        // Recalculate measurements for this component and, for a beam in a continuous run, its run mates
         const recalculated = updated.map(c => {
-          if (c.id === id) {
+          if (c.id === id || (component.runId && c.runId === component.runId)) {
             const updatedBars = c.bars.map(bar => {
               const newMeasurements = calculateBarMeasurementsAuto(
                 bar.barType,
                 bar.direction,
-                component,
+                c,
                 bar.diameter,
-                metadata?.concreteGrade || 'M30',
-                bar.section_span_1 // Pass existing section span override
+                metadata,
+                bar.section_span_1, // Pass existing section span override
+                updated
               );
               return { ...bar, measurements: newMeasurements };
             });
@@ -135,14 +135,14 @@ export function BBSSpreadsheetView({
     const defaultBarType = BAR_TYPES[component.componentType]?.[0] || 'Main Bar';
     const defaultDirection: BarDirection = defaultBarType.includes('(Y-Y)') ? 'Y' : 'X';
     
-    if (component.componentType === 'SLAB' && component.beamWidths && component.topExtensions) {
+    if (component.componentType === 'BEAM' || (component.componentType === 'SLAB' && component.beamWidths && component.topExtensions)) {
        // Use enhanced calculator for auto-measurements
        initialMeasurements = calculateBarMeasurementsAuto(
          defaultBarType,
          defaultDirection,
          component,
          8, // Default diameter
-         metadata?.concreteGrade || 'M30'
+         metadata
        );
     }
 
@@ -173,20 +173,19 @@ export function BBSSpreadsheetView({
     // Find target bar to check its type
     const targetBar = component?.bars.find(b => b.id === barId);
     
-    // Auto-set direction based on bar type
+    // Auto-set direction based on bar type; "Top Main Bar ... - Left & Right" is one bar per side (Excel col G = 2)
     if (updates.barType) {
       if (updates.barType.includes('(Y-Y)')) {
         finalUpdates.direction = 'Y';
       } else if (updates.barType.includes('(X-X)')) {
         finalUpdates.direction = 'X';
       }
+      finalUpdates.barsPerMember = /top main.*&/i.test(updates.barType) ? 2 : 1;
     }
     
     // If direction, bar type, OR section spans changed, auto-recalculate measurements
     if ((updates.direction || updates.barType || updates.section_span_1 !== undefined || updates.section_span_2 !== undefined) && 
-        component?.componentType === 'SLAB' && 
-        component.beamWidths && 
-        component.topExtensions &&
+        (component?.componentType === 'BEAM' || (component?.componentType === 'SLAB' && component.beamWidths && component.topExtensions)) &&
         targetBar
     ) {
        const newDirection = finalUpdates.direction || targetBar.direction;
@@ -201,8 +200,9 @@ export function BBSSpreadsheetView({
          newDirection,
          component,
          diameter,
-         metadata?.concreteGrade || 'M30',
-         newSectionSpan1
+         metadata,
+         newSectionSpan1,
+         components
        );
        
        finalUpdates = { ...finalUpdates, measurements: newMeasurements };
@@ -249,40 +249,8 @@ export function BBSSpreadsheetView({
     recalculateAll(updatedComponents);
   };
 
-  // Main calculation trigger
-  const recalculateAll = (comps: ConcreteComponent[]) => {
-    
-    // Prepare settings from metadata
-    const settings = {
-        developmentLengths: metadata?.developmentLengths || DEVELOPMENT_LENGTH_TABLES['M30'], // Default or User Config matches Excel
-        standardBarLength: metadata?.standardBarLength || 12000
-    };
+  const recalculateAll = (comps: ConcreteComponent[]) => onComponentsChange(recalculateComponents(comps, metadata));
 
-    const calculated = comps.map(comp => {
-      // Determine relevant span for "No of Bars" calculation
-      // For bars along X (direction X), spacing is along Y -> use Span Y
-      // For bars along Y (direction Y), spacing is along X -> use Span X
-      
-      const bars = comp.bars.map(bar => {
-        // Find Component Span relevant for this bar
-        const componentSpan = bar.direction === 'X' ? comp.spanY : comp.spanX;
-        
-        return {
-          ...bar,
-          calculated: calculateComponentBarEntry(
-            bar, 
-            componentSpan,
-            comp.cover,
-            settings,
-            comp.componentType === 'SLAB' // simplified check for U-Bar logic activation if needed
-          )
-        };
-      });
-      return { ...comp, bars };
-    });
-    onComponentsChange(calculated);
-  };
-  
   const projectSummary = calculateProjectTotal(components);
 
   if (!metadata) return <div>Loading...</div>;
@@ -419,29 +387,43 @@ export function BBSSpreadsheetView({
           <TableBody>
             {components.map((component, cIndex) => (
               <React.Fragment key={component.id}>
+                {!isOpen(component) ? (
+                <TableRow className="cursor-pointer hover:bg-muted/30" onClick={() => setExpandedId(component.id)}>
+                   <TableCell className="font-bold text-center">{cIndex + 1}</TableCell>
+                   <TableCell colSpan={13}>
+                     <div className="flex items-center gap-4 text-sm">
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                       <span className="font-bold w-24">{component.name}</span>
+                       <span className="text-muted-foreground w-16">{component.componentType}</span>
+                       <span className="font-mono text-xs">{component.spanX} × {component.spanY} × {component.depth ?? '-'}</span>
+                       {component.runId && <span className="px-1 rounded bg-blue-100 text-blue-700 text-xs">Run {component.runId} · {component.runPosition}</span>}
+                       <span className="ml-auto text-muted-foreground">{component.bars.length} bars</span>
+                       <span className="font-mono w-24 text-right">{component.bars.reduce((kg, b) => kg + (b.calculated?.totalWeight ?? 0), 0).toFixed(1)} kg</span>
+                     </div>
+                   </TableCell>
+                </TableRow>
+                ) : (<>
                 {/* Component Header Row */}
                 <TableRow className="bg-muted/20 pointer-events-none group">
                    <TableCell className="font-bold text-center align-top pt-4">{cIndex + 1}</TableCell>
                    <TableCell className="align-top pt-4 pointer-events-auto" colSpan={13}> {/* Adjusted colSpan */}
                      <div className="flex flex-col gap-4 mb-4">
                        <div className="flex items-center gap-2">
-                         <Select 
+                         {components.length > 1 && (
+                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpandedId(null)} title="Collapse">
+                             <ChevronDown className="h-4 w-4" />
+                           </Button>
+                         )}
+                         <select
                            value={component.componentType}
-                           onValueChange={(v: ConcreteComponentType) => updateComponent(component.id, { 
-                             componentType: v, 
-                             cover: COMPONENT_COVERS[v] || 25 
-                           })}
+                           onChange={e => updateComponent(component.id, { componentType: e.target.value as ConcreteComponentType, cover: COMPONENT_COVERS[e.target.value] || 25 })}
+                           className="w-[120px] h-8 rounded border bg-background px-2 text-sm"
                          >
-                           <SelectTrigger className="w-[120px] h-8 bg-background">
-                             <SelectValue />
-                           </SelectTrigger>
-                           <SelectContent>
-                             <SelectItem value="SLAB">Slab</SelectItem>
-                             <SelectItem value="BEAM">Beam</SelectItem>
-                             <SelectItem value="COLUMN">Column</SelectItem>
-                             <SelectItem value="FOOTING">Footing</SelectItem>
-                           </SelectContent>
-                         </Select>
+                           <option value="SLAB">Slab</option>
+                           <option value="BEAM">Beam</option>
+                           <option value="COLUMN">Column</option>
+                           <option value="FOOTING">Footing</option>
+                         </select>
                          
                          <Input 
                            value={component.name} 
@@ -478,7 +460,7 @@ export function BBSSpreadsheetView({
                        
                        <div className="flex gap-4 text-sm bg-background p-2 rounded border w-fit">
                           <div className="flex items-center gap-2">
-                             <span className="text-muted-foreground">Span X:</span>
+                             <span className="text-muted-foreground">{component.componentType === 'BEAM' ? 'Clear span:' : 'Span X:'}</span>
                              <Input 
                                type="number" 
                                value={component.spanX || ''}
@@ -487,7 +469,7 @@ export function BBSSpreadsheetView({
                              />
                           </div>
                           <div className="flex items-center gap-2">
-                             <span className="text-muted-foreground">Span Y:</span>
+                             <span className="text-muted-foreground">{component.componentType === 'BEAM' ? 'Width:' : 'Span Y:'}</span>
                              <Input 
                                type="number" 
                                value={component.spanY || ''}
@@ -515,6 +497,24 @@ export function BBSSpreadsheetView({
                           </div>
                        </div>
                        
+                       {component.componentType === 'BEAM' && (
+                         <div className="flex gap-4 items-center text-xs p-2 bg-muted/10 rounded border w-fit">
+                            <span className="text-muted-foreground">Supports L / R:</span>
+                            <Input type="number" placeholder="L" value={component.beamWidths?.left || ''} className="w-16 h-6 px-1"
+                              onChange={e => updateComponent(component.id, { beamWidths: { ...component.beamWidths || { left:0, right:0, top:0, bottom:0 }, left: parseFloat(e.target.value) || 0 } })} />
+                            <Input type="number" placeholder="R" value={component.beamWidths?.right || ''} className="w-16 h-6 px-1"
+                              onChange={e => updateComponent(component.id, { beamWidths: { ...component.beamWidths || { left:0, right:0, top:0, bottom:0 }, right: parseFloat(e.target.value) || 0 } })} />
+                            {component.runId && (
+                              <span className="ml-2 px-1 rounded bg-blue-100 text-blue-700" title="Continuous run: Full Span bars span every beam in it">
+                                Run {component.runId} · {component.runPosition}/{components.filter(c => c.runId === component.runId).length}
+                              </span>
+                            )}
+                            <span className="text-muted-foreground ml-2" title="Identical beams sharing this entry (Excel col F)">Nos:</span>
+                            <Input type="number" min="1" value={component.elementCount || 1} className="w-14 h-6 px-1"
+                              onChange={e => updateComponent(component.id, { elementCount: parseInt(e.target.value) || 1 })} />
+                         </div>
+                       )}
+
                        {/* Row 2: U-Bar Inputs (Only for SLAB) */}
                        {component.componentType === 'SLAB' && (
                          <div className="flex flex-col gap-2 mt-2 p-2 bg-muted/10 rounded border text-xs">
@@ -624,20 +624,15 @@ export function BBSSpreadsheetView({
                     <TableCell></TableCell>
                     <TableCell>
                        <div className="space-y-1">
-                          <Select 
-                             value={bar.barType} 
-                             onValueChange={v => updateBarEntry(component.id, bar.id, { barType: v })}
+                          <select
+                             value={bar.barType}
+                             onChange={e => updateBarEntry(component.id, bar.id, { barType: e.target.value })}
+                             className="h-8 w-full text-xs bg-transparent hover:bg-muted/50 px-2 font-medium rounded"
                           >
-                             <SelectTrigger className="h-8 text-xs border-0 shadow-none bg-transparent hover:bg-muted/50 p-0 px-2 justify-start font-medium">
-                               <SelectValue />
-                             </SelectTrigger>
-                             <SelectContent>
-                               {BAR_TYPES[component.componentType]?.map(t => (
-                                 <SelectItem key={t} value={t}>{t}</SelectItem>
-                               ))}
-                               <SelectItem value="Custom">Custom</SelectItem>
-                             </SelectContent>
-                          </Select>
+                             {!BAR_TYPES[component.componentType]?.includes(bar.barType) && bar.barType !== 'Custom' && <option value={bar.barType}>{bar.barType}</option>}
+                             {BAR_TYPES[component.componentType]?.map(t => <option key={t} value={t}>{t}</option>)}
+                             <option value="Custom">Custom</option>
+                          </select>
                           <div className="flex gap-2 px-2">
                              <div 
                                className={`text-[10px] px-1 rounded cursor-pointer ${bar.direction === 'X' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}
@@ -686,19 +681,13 @@ export function BBSSpreadsheetView({
                        />
                     </TableCell>
                     <TableCell>
-                       <Select 
-                         value={bar.diameter?.toString() || '8'}
-                         onValueChange={v => updateBarEntry(component.id, bar.id, { diameter: parseInt(v) })}
+                       <select
+                         value={bar.diameter || 8}
+                         onChange={e => updateBarEntry(component.id, bar.id, { diameter: parseInt(e.target.value) })}
+                         className="h-8 w-full text-center bg-transparent hover:bg-muted/50 rounded"
                        >
-                         <SelectTrigger className="h-8 text-center border-0 bg-transparent hover:bg-muted/50 shadow-none">
-                           <SelectValue />
-                         </SelectTrigger>
-                         <SelectContent>
-                           {[8, 10, 12, 16, 20, 25, 32].map(d => (
-                             <SelectItem key={d} value={d.toString()}>{d} mm</SelectItem>
-                           ))}
-                         </SelectContent>
-                       </Select>
+                         {[8, 10, 12, 16, 20, 25, 32].map(d => <option key={d} value={d}>{d} mm</option>)}
+                       </select>
                     </TableCell>
                     <TableCell>
                        <Input 
@@ -711,55 +700,21 @@ export function BBSSpreadsheetView({
                     
                     {/* Removed Duplicate Dia and Bars/Memb Cells */}
                     
-                    {/* Total no. of members Reqd (calculated based on bar type) */}
+                    {/* Total no. of members Reqd (Excel col H) — typed value overrides the formula */}
                     <TableCell className="text-center">
-                       {(() => {
-                         const totalMembers = calculateBarsPerMember(
-                           bar.barType, 
-                           bar.direction, 
-                           component, 
-                           bar.spacing, 
-                           bar.section_span_1, 
-                           bar.section_span_2
-                         );
-                         return (
-                           <span 
-                             className="font-mono text-primary font-medium cursor-help hover:bg-muted/20 px-1 py-0.5 rounded"
-                             title={`Total Members Calculation:
-Bar Type: ${bar.barType}
-Result: ${totalMembers}`}
-                           >
-                             {totalMembers}
-                           </span>
-                         );
-                       })()}
+                       <Input
+                         type="number"
+                         min="0"
+                         className="h-8 text-center border-0 bg-transparent hover:bg-muted/50 font-mono text-primary"
+                         value={bar.totalMembers ?? (bar.calculated ? bar.calculated.noOfBars / (bar.barsPerMember || 1) / (component.elementCount || 1) : '')}
+                         onChange={e => updateBarEntry(component.id, bar.id, { totalMembers: e.target.value === '' ? undefined : parseInt(e.target.value) || 0 })}
+                         title="Members (Excel col H). Clear to use the formula."
+                       />
                     </TableCell>
                     
-                    {/* Total nos. (barsPerMember × calculated totalMembers) */}
-                    <TableCell className="text-center">
-                       {(() => {
-                         const totalMembers = calculateBarsPerMember(
-                           bar.barType, 
-                           bar.direction, 
-                           component, 
-                           bar.spacing, 
-                           bar.section_span_1, 
-                           bar.section_span_2
-                         );
-                         const totalNos = (bar.barsPerMember || 1) * totalMembers;
-                         return (
-                           <span 
-                             className="font-mono font-bold text-primary cursor-help hover:bg-muted/20 px-1 py-0.5 rounded"
-                             title={`Total Nos Calculation:
-Formula: Bars per Member × Total Members
-Bars per Member: ${bar.barsPerMember || 1}
-Total Members: ${totalMembers}
-Result: ${bar.barsPerMember || 1} × ${totalMembers} = ${totalNos}`}
-                           >
-                             {totalNos}
-                           </span>
-                         );
-                       })()}
+                    {/* Total nos. (Excel col I) */}
+                    <TableCell className="text-center font-mono font-bold text-primary">
+                       {bar.calculated ? bar.calculated.noOfBars : '-'}
                     </TableCell>
                     
                     {/* Measurements Inputs a-f + lap + calculated fields */}
@@ -777,25 +732,9 @@ Result: ${bar.barsPerMember || 1} × ${totalMembers} = ${totalNos}`}
                            />
                          ))}
                          
-                         {/* Calculated field: Total (a+b+c+d+e+f, excluding lap) */}
-                         <div 
-                           className="w-full h-full min-h-[40px] flex items-center justify-center border-r bg-muted/20 text-xs font-mono font-medium text-primary cursor-help hover:bg-muted/30"
-                           title={`Total Measurement:
-Formula: a + b + c + d + e + f (excludes lap)
-a: ${bar.measurements.a || 0}mm
-b: ${bar.measurements.b || 0}mm
-c: ${bar.measurements.c || 0}mm
-d: ${bar.measurements.d || 0}mm
-e: ${bar.measurements.e || 0}mm
-f: ${bar.measurements.f || 0}mm
-Total: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0) + (bar.measurements.f || 0)}mm`}
-                         >
-                           {(() => {
-                             const total = (bar.measurements.a || 0) + (bar.measurements.b || 0) + 
-                                          (bar.measurements.c || 0) + (bar.measurements.d || 0) + 
-                                          (bar.measurements.e || 0) + (bar.measurements.f || 0);
-                             return total > 0 ? total : '-';
-                           })()}
+                         {/* Calculated field: Total (Excel col Q = SUM(a..lap)) */}
+                         <div className="w-full h-full min-h-[40px] flex items-center justify-center border-r bg-muted/20 text-xs font-mono font-medium text-primary">
+                           {bar.calculated ? bar.calculated.totalMeasurement : '-'}
                          </div>
                          
                          {/* Calculated field: No of Bends */}
@@ -823,58 +762,14 @@ Result: ${bar.calculated ? bar.calculated.noOfDeductions : 0} × ${bar.diameter}
                        </div>
                     </TableCell>
                     
-                    {/* Cut Length (Bar type specific formula) */}
-                    <TableCell className="text-center">
-                      {(() => {
-                        const deduction = bar.calculated ? bar.calculated.deductionAmount : 0;
-                        const cutLength = calculateCutLengthByBarType(bar.barType, bar.measurements, deduction);
-                        
-                        return cutLength > 0 ? (
-                          <span 
-                            className="font-mono font-medium cursor-help hover:bg-muted/20 px-1 py-0.5 rounded"
-                            title={bar.barType.toLowerCase().includes('bottom bar (y-y)') 
-                              ? `Cut Length Calculation (Special Formula):
-Bar Type: ${bar.barType}
-Formula: CEILING((a+b+c+d+e+deduction) / 5) × 5
-a+b+c+d+e: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0)}mm (excludes f)
-Deduction: ${deduction}mm (added, not subtracted)
-Before rounding: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0) + deduction}mm
-Result: ${cutLength}mm (rounded up to 5mm)`
-                              : `Cut Length Calculation (Standard Formula):
-Bar Type: ${bar.barType}
-Formula: Total - Deduction
-Total: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0) + (bar.measurements.f || 0)}mm
-Deduction: ${deduction}mm
-Result: ${(bar.measurements.a || 0) + (bar.measurements.b || 0) + (bar.measurements.c || 0) + (bar.measurements.d || 0) + (bar.measurements.e || 0) + (bar.measurements.f || 0)} - ${deduction} = ${cutLength}mm`}
-                          >
-                            {cutLength}mm
-                          </span>
-                        ) : '-';
-                      })()}
+                    {/* Cut Length (Excel col T) */}
+                    <TableCell className="text-center font-mono font-medium">
+                      {bar.calculated ? `${bar.calculated.cuttingLength}mm` : '-'}
                     </TableCell>
                     
-                    {/* Total Length (Cut Length × Total nos / 1000) */}
-                    <TableCell className="text-center">
-                      {(() => {
-                        const deduction = bar.calculated ? bar.calculated.deductionAmount : 0;
-                        const cutLength = calculateCutLengthByBarType(bar.barType, bar.measurements, deduction);
-                        const totalMembers = calculateBarsPerMember(bar.barType, bar.direction, component, bar.spacing);
-                        const totalNos = (bar.barsPerMember || 1) * totalMembers;
-                        const totalLength = (cutLength * totalNos) / 1000;
-                        
-                        return totalLength > 0 ? (
-                          <span 
-                            className="font-mono font-medium cursor-help hover:bg-muted/20 px-1 py-0.5 rounded"
-                            title={`Total Length Calculation:
-Formula: (Cut Length × Total Nos) / 1000
-Cut Length: ${cutLength}mm
-Total Nos: ${totalNos}
-Result: (${cutLength} × ${totalNos}) / 1000 = ${totalLength.toFixed(2)}m`}
-                          >
-                            {totalLength.toFixed(2)}m
-                          </span>
-                        ) : '-';
-                      })()}
+                    {/* Total Length (Excel col U) */}
+                    <TableCell className="text-center font-mono font-medium">
+                      {bar.calculated ? `${bar.calculated.totalLength.toFixed(3)}m` : '-'}
                     </TableCell>
                     
                     {/* Bends Input (with auto-calculation) */}
@@ -911,6 +806,7 @@ Result: (${cutLength} × ${totalNos}) / 1000 = ${totalLength.toFixed(2)}m`}
                      </Button>
                    </TableCell>
                 </TableRow>
+                </>)}
               </React.Fragment>
             ))}
           </TableBody>

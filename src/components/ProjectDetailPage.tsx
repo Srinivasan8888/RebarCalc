@@ -10,12 +10,16 @@ import { ProfileSwitchDialog } from './ProfileSwitchDialog';
 import { calculateAll } from '@/lib/calculator';
 import { summarizeByDiameter, summarizeByShape, summarizeByMember } from '@/lib/calculator';
 import { saveToLocalStorage } from '@/lib/local-storage';
-import { Settings, Download, Save, AlertCircle, RefreshCw } from 'lucide-react';
+import { Settings, Download, Save, AlertCircle, RefreshCw, Upload } from 'lucide-react';
 import type { ProjectConfig, BarEntry, CalculatedBar } from '@/types';
 import { codeProfileService } from '@/services/code-profile-service';
 import { MethodologyToggle } from './MethodologyToggle';
 import { BBSSpreadsheetView } from './BBSSpreadsheetView';
 import type { ConcreteComponent, BBSMetadata } from '@/types/component-types';
+import { parseBBSWorkbook } from '@/lib/excel-importer';
+import { exportBBSWorkbook } from '@/lib/bbs-excel-exporter';
+import { ExcelExporter } from '@/lib/excel-exporter';
+import { recalculateComponents } from '@/lib/component-calculator';
 
 interface ProjectDetailPageProps {
   projectId: string;
@@ -149,6 +153,25 @@ export function ProjectDetailPage({
     onConfigUpdate(updatedConfig);
   };
 
+  const handleImportExcel = async (file: File) => {
+    if (config.components?.length && !confirm('Replace the existing components with the ones in this workbook?')) return;
+    try {
+      const { metadata, components, doubts } = await parseBBSWorkbook(await file.arrayBuffer(), config.bbsMetadata);
+      const updatedConfig: ProjectConfig = {
+        ...config,
+        calculationMode: 'COMPONENT',
+        bbsMetadata: metadata,
+        components: recalculateComponents(components, metadata)
+      };
+      setConfig(updatedConfig);
+      onConfigUpdate(updatedConfig);
+      setImportDoubts(doubts);
+    } catch (err) {
+      alert(`Could not import workbook: ${err instanceof Error ? err.message : err}`);
+    }
+  };
+  const [importDoubts, setImportDoubts] = useState<string[]>([]);
+
   const getSaveStatusIcon = () => {
     switch (saveStatus) {
       case 'saving':
@@ -255,6 +278,37 @@ export function ProjectDetailPage({
       </div>
 
 
+
+      <Button variant="outline" size="sm" asChild>
+        <label className="cursor-pointer">
+          <Upload className="h-4 w-4 mr-2" /> Import BBS Excel
+          <input
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleImportExcel(f); e.target.value = ''; }}
+          />
+        </label>
+      </Button>
+      {config.calculationMode === 'COMPONENT' && config.bbsMetadata && (
+        <Button variant="outline" size="sm" className="ml-2" onClick={async () => {
+          const buf = await exportBBSWorkbook(config.components || [], config.bbsMetadata!);
+          ExcelExporter.downloadExcel(new Blob([buf]), `${config.bbsMetadata!.projectName || config.name} BBS.xlsx`);
+        }}>
+          <Download className="h-4 w-4 mr-2" /> Export BBS Excel
+        </Button>
+      )}
+
+      <Dialog open={importDoubts.length > 0} onOpenChange={open => !open && setImportDoubts([])}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{importDoubts.length} doubts from the schedule — settle these before the steel is cut</DialogTitle>
+          </DialogHeader>
+          <ul className="max-h-[60vh] overflow-y-auto space-y-1 text-sm list-disc pl-5">
+            {importDoubts.map((d, i) => <li key={i}>{d}</li>)}
+          </ul>
+        </DialogContent>
+      </Dialog>
 
       {/* Methodology Toggle */}
       <MethodologyToggle 

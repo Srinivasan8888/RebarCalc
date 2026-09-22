@@ -26,12 +26,12 @@ export function ComponentFormulaTooltip({
         formula: 'a + b + c + d + e + f',
         description: 'Standard addition of all segments',
         segments: [
-          'a = Bottom span',
-          'b = 2 × beam penetration',
-          'c = 4 × vertical rise',
-          'd = Single vertical rise',
-          'e = Single vertical rise', 
-          'f = Top extensions'
+          'a = Span',
+          'b = 2 × (start beam width − cover)',
+          'c = 2 × (end beam width − cover)',
+          'd = Depth − 2 × cover',
+          'e = Depth − 2 × cover',
+          'f = Top extensions (start + end)'
         ]
       };
     }
@@ -43,26 +43,23 @@ export function ComponentFormulaTooltip({
         description: 'Uses perpendicular span',
         segments: [
           'a = Perpendicular span',
-          'b = Beam - cover',
-          'c = Beam - cover',
-          'd = Foot length (95mm)',
-          'e = Foot length (95mm)'
+          'b = Right beam width − cover',
+          'c = Bottom beam width − cover',
+          'd = Depth − cover',
+          'e = Depth − cover'
         ]
       };
     }
     
-    if (normalizedType.includes('top')) {
+    if (normalizedType.includes('top main')) {
       return {
-        title: 'Top Bar',
-        formula: 'a + b + c + d + e + f',
-        description: 'Standard addition',
+        title: 'Top Main Bar (over support)',
+        formula: 'CEILING(a + b + d + deduction, 5)',
+        description: 'One bar per side; length is that side\'s top extension',
         segments: [
-          'a = Span',
-          'b = Beam penetration',
-          'c = Vertical rise',
-          'd = Beam penetration',
-          'e = Extension',
-          'f = Extension'
+          'a = Top extension of the side',
+          'b = Beam width of the side − cover',
+          'd = Depth − cover'
         ]
       };
     }

@@ -177,16 +177,3 @@ function getArrowClasses(side: string): string {
       return 'bottom-[-4px] left-1/2 -translate-x-1/2 border-t-0 border-l-0';
   }
 }
-
-// Simple wrapper for adding formula tooltip to any element
-export function WithFormulaTooltip({ 
-  shapeCode, 
-  children, 
-  ...props 
-}: FormulaTooltipProps) {
-  return (
-    <FormulaTooltip shapeCode={shapeCode} {...props}>
-      {children}
-    </FormulaTooltip>
-  );
-}

@@ -12,7 +12,6 @@ describe('Excel BBS Compatibility Tests', () => {
     // ROUNDUP(20) = 20 bars
     
     const relevantSpan = 3000;
-    const cover = 20;
     const spacing = 150;
     
     // Minimal mock bar entry
@@ -25,10 +24,10 @@ describe('Excel BBS Compatibility Tests', () => {
       measurements: { a: 1000 } // arbitrary length
     };
 
-    const result = calculateComponentBarEntry(mockBar, relevantSpan, cover, {
+    const result = calculateComponentBarEntry(mockBar, Math.ceil(relevantSpan / spacing), {
       developmentLengths: { 8: 400 },
       standardBarLength: 12000
-    }, false);
+    });
     
     // Excel uses ROUNDUP(Span/Spacing, 0) which gives 20
     expect(result.noOfBars).toBe(20);
@@ -55,10 +54,10 @@ describe('Excel BBS Compatibility Tests', () => {
     };
     
     // CEILING(1000+100+100+0+0+64, 5) = CEILING(1264, 5) = 1265
-    const result = calculateComponentBarEntry(mockBar, 0, 0, {
+    const result = calculateComponentBarEntry(mockBar, 1, {
       developmentLengths: { 8: 400 },
       standardBarLength: 12000
-    }, false);
+    });
     
     expect(result.cuttingLength).toBe(1265);
     
@@ -74,10 +73,10 @@ describe('Excel BBS Compatibility Tests', () => {
     };
     
     // Standard: 1232 - 32 = 1200
-    const resultStandard = calculateComponentBarEntry(mockBarStandard, 0, 0, {
+    const resultStandard = calculateComponentBarEntry(mockBarStandard, 1, {
       developmentLengths: { 8: 400 },
       standardBarLength: 12000
-    }, false);
+    });
     
     expect(resultStandard.cuttingLength).toBe(1200);
   });
@@ -108,10 +107,10 @@ describe('Excel BBS Compatibility Tests', () => {
         manualNoOfDeductions: 2
     };
 
-    const result = calculateComponentBarEntry(mockBar, 0, 0, {
+    const result = calculateComponentBarEntry(mockBar, 1, {
       developmentLengths: { 10: 500 },
       standardBarLength: 12000
-    }, false);
+    });
     
     // Deduction Amount should be 2 * 2 * 10 = 40
     expect(result.deductionAmount).toBe(40);

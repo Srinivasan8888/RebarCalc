@@ -143,13 +143,3 @@ export const CODE_PROFILES: Record<string, CodeProfile> = {
     }
   }
 };
-
-// Helper function to get all available profile IDs
-export const getAvailableProfileIds = (): string[] => {
-  return Object.keys(CODE_PROFILES);
-};
-
-// Helper function to get profile by ID
-export const getProfileById = (id: string): CodeProfile | null => {
-  return CODE_PROFILES[id] || null;
-};

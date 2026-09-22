@@ -52,21 +52,6 @@ export function calculateBendDeduction(
   }
 }
 
-/**
- * Calculate total bend deductions for a shape based on its bend angles
- */
-export function calculateTotalBendDeduction(
-  shapeCode: ShapeCode,
-  diameter: number,
-  config: ProjectConfig
-): number {
-  const shape = SHAPE_DEFINITIONS[shapeCode];
-  return shape.bendAngles.reduce(
-    (total, angle) => total + calculateBendDeduction(angle, diameter, config),
-    0
-  );
-}
-
 // ============================================================================
 // HOOK LENGTH CALCULATOR
 // ============================================================================
@@ -303,23 +288,6 @@ export function calculateAll(
   const effectiveConfig = profile ? applyProfileToConfig(config, profile) : config;
   
   return bars.map(bar => calculateBar(bar, effectiveConfig));
-}
-
-/**
- * Process all bar entries with profile-aware configuration
- * This is the enhanced version that automatically applies profile parameters
- * 
- * @param bars - Array of bar entries
- * @param config - Project configuration (must include codeProfileId)
- * @returns Array of calculated bars with profile-based calculations
- */
-export function calculateAllWithProfile(
-  bars: BarEntry[], 
-  config: ProjectConfig
-): CalculatedBar[] {
-  // Import here to avoid circular dependency - using dynamic import
-  // For now, just use the regular calculation without profile service
-  return bars.map(bar => calculateBar(bar, config));
 }
 
 // ============================================================================

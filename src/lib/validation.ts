@@ -242,28 +242,3 @@ export function validateBarEntry(barEntry: Partial<BarEntry>): ValidationResult 
     errors
   };
 }
-
-/**
- * Validate multiple bar entries
- */
-export function validateBarEntries(barEntries: Partial<BarEntry>[]): ValidationResult {
-  const allErrors: ValidationError[] = [];
-
-  barEntries.forEach((barEntry, index) => {
-    const result = validateBarEntry(barEntry);
-    if (!result.valid) {
-      // Add entry index to error messages for better identification
-      const indexedErrors = result.errors.map(error => ({
-        ...error,
-        field: `entry[${index}].${error.field}`,
-        message: `Entry ${index + 1}: ${error.message}`
-      }));
-      allErrors.push(...indexedErrors);
-    }
-  });
-
-  return {
-    valid: allErrors.length === 0,
-    errors: allErrors
-  };
-}
