@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppLayout } from './components/AppLayout'
 import { DashboardPage } from './components/DashboardPage'
 import { ProjectDetailPage } from './components/ProjectDetailPage'
 import { ProjectManager } from './components/ProjectManager'
-import { getProjectList } from './lib/local-storage'
+import { getProjectList, loadFromLocalStorage } from './lib/local-storage'
+import { useSession } from './lib/supabase'
+import { syncAll, loadSharedProject, type SyncReport } from './lib/project-repository'
 import type { ProjectConfig, BarEntry } from './types'
-import './App.css'
 
 type AppView = 'dashboard' | 'projects' | 'project-detail';
 
@@ -35,7 +36,33 @@ function App() {
     id: string;
     config: ProjectConfig;
     bars: BarEntry[];
+    readOnly?: boolean;
   } | null>(null);
+
+  // Cloud: after sign-in pull newer copies down and push unsynced ones up, then re-read the list.
+  const session = useSession();
+  const [syncTick, setSyncTick] = useState(0);
+  const [syncNote, setSyncNote] = useState<string | null>(null);
+  const userId = session?.user.id;
+  useEffect(() => {
+    if (!userId) return;
+    syncAll().then((r: SyncReport) => {
+      setSyncTick(t => t + 1);
+      const parts = [r.pulled.length && `${r.pulled.length} pulled`, r.pushed.length && `${r.pushed.length} pushed`,
+        r.conflicts.length && `${r.conflicts.length} in conflict (open the project to resolve)`, ...r.errors].filter(Boolean);
+      setSyncNote(parts.length ? `Sync: ${parts.join(', ')}` : null);
+    });
+  }, [userId]);
+
+  // ?share=<token> opens a read-only copy that is never written to this browser.
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('share');
+    if (!token) return;
+    loadSharedProject(token).then(r => {
+      if (r.success && r.data) { setCurrentProject({ id: r.data.config.id, ...r.data, readOnly: true }); setCurrentView('project-detail'); }
+      else setSyncNote(r.error ?? 'Could not open the shared project');
+    });
+  }, []);
 
   const handleProjectSelected = (projectId: string, config: ProjectConfig, bars: BarEntry[]) => {
     setCurrentProject({ id: projectId, config, bars });
@@ -79,10 +106,14 @@ function App() {
     switch (currentView) {
       case 'dashboard':
         return (
-          <DashboardPage
-            onCreateProject={handleCreateProject}
-            onOpenProject={handleProjectSelected}
-          />
+          <>
+            {syncNote && <p className="mb-4 text-sm text-muted-foreground" role="status">{syncNote}</p>}
+            <DashboardPage
+              key={syncTick}
+              onCreateProject={handleCreateProject}
+              onOpenProject={handleProjectSelected}
+            />
+          </>
         );
       
       case 'projects':
@@ -97,9 +128,12 @@ function App() {
         }
         return (
           <ProjectDetailPage
+            key={currentProject.id}
             projectId={currentProject.id}
             initialConfig={currentProject.config}
             initialBars={currentProject.bars}
+            readOnly={currentProject.readOnly}
+            signedIn={!!session}
             onConfigUpdate={handleConfigUpdate}
             onBarsUpdate={handleBarsUpdate}
           />
@@ -115,6 +149,7 @@ function App() {
       currentProject={currentProject}
       availableProjects={availableProjects}
       onBackToProjects={currentView === 'project-detail' ? handleBackToProjects : undefined}
+      onProjectChange={id => { const r = loadFromLocalStorage(id); if (r.success && r.data) handleProjectSelected(id, r.data.config, r.data.bars); }}
     >
       {renderContent()}
     </AppLayout>

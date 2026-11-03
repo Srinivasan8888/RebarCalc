@@ -16,7 +16,7 @@ Reference workbooks (client data, keep them in `data/`, never copy elsewhere):
 | `data/dra-bbs.skill` | The generator skill the DRA beam workbook came from; `references/beam-rules.md` and `slab-rules.md` inside are the written house rules |
 
 Tests that are the spec (keep green, extend rather than weaken):
-`sample-slab-bbs`, `slab-bar-families`, `beam-bbs`, `excel-importer`, `schedule-importer`, `bbs-excel-exporter`, `bbs-spreadsheet-view`.
+`sample-slab-bbs`, `slab-bar-families`, `beam-bbs`, `excel-importer`, `schedule-importer`, `bbs-excel-exporter`, `bbs-spreadsheet-view`, `steel-review`, `project-repository`, `print-sheet`.
 
 ## Map
 
@@ -31,6 +31,10 @@ src/lib/constants.ts            BAR_TYPES per member type (names must match the 
 src/components/BBSSpreadsheetView.tsx  the BBS table (sheet column order); one member expanded at a time
 src/components/ProjectDetailPage.tsx   import/export buttons, inline doubts panel, autosave
 src/components/TotalSteelWeight.tsx    dia-wise TOTAL block
+src/lib/steel-review.ts + SteelReview  issued-vs-BBS kg per dia (IS 1786 tolerance), 12 m cut plan, kg/m³
+src/components/PrintSheet.tsx          bar-bender sheet, one page per member; print CSS in index.css
+src/lib/project-repository.ts          save/delete: localStorage first, then Supabase when configured (versioned, never overwrites newer)
+src/lib/supabase.ts + AccountMenu      optional client; env vars in .env.example; schema in supabase/migrations/
 src/lib/calculator.ts + BarEntryTable  legacy Manual mode (shape codes S1–S6); untouched by the Excel work
 ```
 
@@ -43,7 +47,7 @@ Data flow: `components[]` (with stored `measurements` and `calculated`) live in 
 - **Members** (col H) = bars along the perpendicular span (`ROUNDUP(span/spacing)`), or for dist bars over the top extensions, or for beam stirrups `TRUNC(2D/sp)` (end zones) / `TRUNC((J−4D)/sp)` (middle) / `TRUNC(J/sp)` (full). For beam main bars it is typed (rods per layer).
 - **Total nos** = bars/member × members × elementCount. **Length (m)** = cut × total nos / 1000. **kg** = length × d²/162 (unrounded).
 - **Ld**: development length per diameter; the slab workbook uses 50D, the DRA beam workbook's table is 40D even though its header says 50D (the table wins). **Curtail offset** (`R8`, 300) shortens bottom curtail bars.
-- **Doubt**: anything the app had to assume (missing span, bundled call-out `2T20+1T16`, a typed member count that differs from the formula). Shown inline; never resolved silently.
+- **Doubt**: anything the app had to assume (missing span, bundled call-out `2T20+1T16`, a typed member count that differs from the formula). Stored on `bbsMetadata.doubts` with an optional `ruling`; shown inline; never resolved silently.
 
 ## Working here
 
@@ -51,7 +55,7 @@ Data flow: `components[]` (with stored `measurements` and `calculated`) live in 
 - New bar family or layout: read the workbook with exceljs (`node -e` scripts are fine), derive the rule from the cell formulas, comment the cells, add a test that asserts the sheet's cached values, then implement.
 - Performance ceiling that matters: a floor is ~400 members / 3,000 bars. Never mount every bar row; native `<select>` in rows, Radix only for the two grade dropdowns.
 - Copy: terse, specific, no em dashes. Numbers right-aligned with tabular figures. Meaning never by colour alone.
-- `npm run dev` (Vite, :5173), `npm test` (vitest, 23 files), `npm run build` (tsc -b + vite). `npm run lint` has pre-existing errors in `calculator.ts`, `formula-display-service.ts`, `validation.test.ts`, `ShapeDiagram.tsx`; do not let them grow.
+- `npm run dev` (Vite, :5173), `npm test` (vitest, 26 files), `npm run build` (tsc -b + vite). `npm run lint` has pre-existing errors in `calculator.ts`, `formula-display-service.ts`, `validation.test.ts`, `ShapeDiagram.tsx`; do not let them grow.
 - Commit only when asked. `graphify-out/` is a scratch directory, not part of the app.
 
 ## Known gaps
@@ -60,5 +64,6 @@ Data flow: `components[]` (with stored `measurements` and `calculated`) live in 
 - A workbook with both beam and slab sheets re-imports beams only (importer sniffs the first sheet).
 - Runs can be imported, not created in the UI; a hand-typed intermediate `Left & Right` extra-top bar gets 1 bend from the name rule instead of 0.
 - Export writes one cover per sheet (from the first member).
-- Header project switcher and settings icon never render: `App.tsx` does not pass `onProjectChange` / `onProjectSettings`.
+- Header settings icon never renders: `App.tsx` does not pass `onProjectSettings` (the project page has its own).
 - Column and footing formulas are heuristics, not from a sheet.
+- Cut plan is first-fit over one stock length, offcuts not reused; print sheet verified by render test, not on paper.

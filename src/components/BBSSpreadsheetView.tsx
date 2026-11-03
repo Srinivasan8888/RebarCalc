@@ -25,6 +25,7 @@ import {
 import { recalculateComponents } from '@/lib/component-calculator';
 import { calculateProjectTotal, calculateBarMeasurementsAuto } from '@/lib/enhanced-calculator';
 import { TotalSteelWeight } from './TotalSteelWeight';
+import { SteelReview } from './SteelReview';
 import { fmt } from '@/lib/utils';
 
 const CELL = 'h-9 w-full min-w-0 rounded-sm bg-transparent px-1.5 text-sm num placeholder:text-muted-foreground/60 focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring/60';
@@ -75,6 +76,9 @@ export function BBSSpreadsheetView({
   // Only one component renders its card and bar rows at a time; the rest are one summary row each.
   // ponytail: a 369-beam import was ~40k DOM nodes and froze the tab , collapse beats virtualisation here.
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState('');
+  const needle = filter.trim().toLowerCase();
+  const shown = needle ? components.filter(c => c.name.toLowerCase().includes(needle)) : components;
   const isOpen = (c: ConcreteComponent) => components.length === 1 || expandedId === c.id;
 
   const handleMetadataChange = (field: keyof BBSMetadata, value: string) => {
@@ -308,6 +312,13 @@ export function BBSSpreadsheetView({
         </p>
       </section>
 
+      {components.length > 8 && (
+        <div className="flex items-center gap-3">
+          <Input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Find member (B12, S3)" aria-label="Find member" className="h-9 w-56" />
+          <span className="text-xs text-muted-foreground tabular-nums">{shown.length} of {components.length} members</span>
+        </div>
+      )}
+
       {/* The BBS, in the sheet's column order */}
       <div className="overflow-x-auto rounded-md border">
         <Table className="min-w-[1880px]">
@@ -333,6 +344,7 @@ export function BBSSpreadsheetView({
           </TableHeader>
           <TableBody>
             {components.map((component, cIndex) => {
+              if (needle && !shown.includes(component)) return null;
               const open = isOpen(component);
               const kg = component.bars.reduce((sum, b) => sum + (b.calculated?.totalWeight ?? 0), 0);
               const isBeam = component.componentType === 'BEAM';
@@ -531,6 +543,7 @@ export function BBSSpreadsheetView({
         <Button variant="outline" onClick={addComponent}><Plus /> Add member</Button>
         <TotalSteelWeight summary={projectSummary} />
       </div>
+      <SteelReview components={components} summary={projectSummary} metadata={metadata} onMetadataChange={onMetadataChange} />
     </div>
   );
 }

@@ -9,12 +9,12 @@ interface MethodologyToggleProps {
 
 export function MethodologyToggle({ mode, onModeChange }: MethodologyToggleProps) {
   return (
-    <div className="flex items-center space-x-1 bg-muted/30 p-1 rounded-lg border">
+    <div className="inline-flex items-center gap-1 rounded-lg border bg-muted/30 p-1">
       <Button
         variant={mode === 'MANUAL' ? 'secondary' : 'ghost'}
         size="sm"
         onClick={() => onModeChange('MANUAL')}
-        className="flex items-center gap-2 flex-1"
+        className="flex items-center gap-2"
       >
         <Table className="h-4 w-4" />
         <span>Manual Bar Entry</span>
@@ -24,7 +24,7 @@ export function MethodologyToggle({ mode, onModeChange }: MethodologyToggleProps
         variant={mode === 'COMPONENT' ? 'secondary' : 'ghost'}
         size="sm"
         onClick={() => onModeChange('COMPONENT')}
-        className="flex items-center gap-2 flex-1"
+        className="flex items-center gap-2"
       >
         <LayoutGrid className="h-4 w-4" />
         <span>Component Based (BBS)</span>

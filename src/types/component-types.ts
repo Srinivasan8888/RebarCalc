@@ -18,6 +18,14 @@ export interface BBSMetadata {
   developmentLengths?: Record<number, number>; // Ld per diameter (slab sheet F2:L3, beam sheet W3:AC4)
   standardBarLength?: number;      // Standard bar length in mm
   curtailOffset?: number;          // Beam sheet R8 "Bottom curtainment spacing" (mm)
+  issuedKg?: Record<number, number>; // steel issued to site per dia, reconciled against BBS kg (IS 1786 tolerance)
+  doubts?: ProjectDoubt[];         // every assumption the app made; kept with the project until someone rules on it
+}
+
+/** A doubt is never resolved silently: it stays listed until a person writes the ruling. */
+export interface ProjectDoubt {
+  text: string;
+  ruling?: string;
 }
 
 // Component definition (like "A1 (B1 - 3H)" in the image)

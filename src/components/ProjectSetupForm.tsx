@@ -152,24 +152,24 @@ export function ProjectSetupForm({
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Project Configuration</CardTitle>
+        <CardTitle>New project</CardTitle>
         <CardDescription>
-          Set up your project with code standards and calculation defaults
+          Name it and pick the code the Manual mode formulas follow. BBS mode takes its rules from the workbook.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Project Name */}
+          {/* Project name */}
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium">
-              Project Name *
+              Project name
             </label>
             <Input
               id="name"
               type="text"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
-              placeholder="Enter project name"
+              placeholder="DRA iHeart 19th floor"
               aria-invalid={!!errors.name}
             />
             {errors.name && (
@@ -316,7 +316,7 @@ export function ProjectSetupForm({
           {!selectedProfile && (
             <div className="space-y-2">
               <label htmlFor="codeStandard" className="text-sm font-medium">
-                Code Standard (Legacy)
+                Code standard
               </label>
               <Select
                 value={formData.codeStandard}
@@ -333,9 +333,6 @@ export function ProjectSetupForm({
                   <SelectItem value="CUSTOM">Custom</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Please select a code profile above for better parameter management
-              </p>
             </div>
           )}
 

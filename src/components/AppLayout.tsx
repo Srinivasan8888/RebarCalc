@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings } from 'lucide-react';
 import type { ProjectConfig } from '@/types';
+import { AccountMenu } from './AccountMenu';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -63,6 +64,8 @@ export function AppLayout({
             )}
           </nav>
 
+          <div className="flex items-center gap-4">
+          <AccountMenu />
           {currentProject && (
             <div className="flex items-center gap-2">
               {availableProjects.length > 1 && onProjectChange && (
@@ -86,6 +89,7 @@ export function AppLayout({
               )}
             </div>
           )}
+          </div>
         </div>
       </header>
 
