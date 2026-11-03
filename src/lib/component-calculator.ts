@@ -183,3 +183,20 @@ export function recalculateComponents(components: ConcreteComponent[], metadata?
     }))
   }));
 }
+
+/**
+ * Bars whose stored kg differ from what recalculateComponents produces now. Non-empty means a
+ * formula changed since the project was saved; the table would otherwise show stale numbers as if exact.
+ */
+export function findCalculationDrift(components: ConcreteComponent[], metadata?: BBSMetadata): string[] {
+  const fresh = recalculateComponents(components, metadata);
+  const drift: string[] = [];
+  components.forEach((comp, i) => comp.bars.forEach((bar, j) => {
+    const stored = bar.calculated?.totalWeight;
+    const now = fresh[i].bars[j].calculated?.totalWeight;
+    if (stored !== undefined && now !== undefined && Math.abs(stored - now) > 1e-6) {
+      drift.push(`${comp.name} ${bar.barType}: stored ${stored.toFixed(3)} kg, recalculated ${now.toFixed(3)} kg`);
+    }
+  }));
+  return drift;
+}

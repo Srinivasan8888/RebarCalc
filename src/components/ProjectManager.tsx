@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ProjectSetupForm } from './ProjectSetupForm';
 import { ProjectListView } from './ProjectListView';
-import { saveToLocalStorage, loadFromLocalStorage } from '@/lib/local-storage';
+import { loadFromLocalStorage } from '@/lib/local-storage';
+import { saveProject } from '@/lib/project-repository';
 import type { ProjectConfig, BarEntry } from '@/types';
 
 type ViewMode = 'list' | 'create' | 'edit';
@@ -73,7 +74,7 @@ export function ProjectManager({ onProjectSelected, initialMode = 'list' }: Proj
         };
       }
 
-      const saveResult = saveToLocalStorage(projectConfig, existingBars);
+      const saveResult = saveProject(projectConfig, existingBars).local;
       
       if (saveResult.success) {
         setViewMode('list');

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { getProjectList, loadFromLocalStorage, deleteFromLocalStorage, type ProjectListItem } from '@/lib/local-storage';
+import { getProjectList, loadFromLocalStorage, exportAllProjectsAsJSON, importAllProjectsFromJSON, type ProjectListItem } from '@/lib/local-storage';
+import { deleteProject } from '@/lib/project-repository';
+import { ExcelExporter } from '@/lib/excel-exporter';
 import { calculateAll } from '@/lib/calculator';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Download, Upload } from 'lucide-react';
 
 interface ProjectListViewProps {
   onCreateProject: () => void;
@@ -60,24 +62,55 @@ export function ProjectListView({ onCreateProject, onOpenProject }: ProjectListV
     catch (e) { setError(e instanceof Error ? e.message : 'Could not read saved projects'); setRows([]); }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!projectToDelete) return;
-    const result = deleteFromLocalStorage(projectToDelete.id);
-    if (!result.success) setError(result.error || 'Could not delete project');
+    const result = await deleteProject(projectToDelete.id);
+    if (!result.success || result.error) setError(result.error || 'Could not delete project');
     setProjectToDelete(null);
     load();
   };
+
+  const backupAll = () => {
+    const r = exportAllProjectsAsJSON();
+    if (!r.success || !r.data) { setError(r.error || 'Could not build the backup'); return; }
+    ExcelExporter.downloadExcel(new Blob([r.data], { type: 'application/json' }), `RebarCalc backup ${new Date().toISOString().slice(0, 10)}.json`);
+  };
+
+  const restore = async (file: File) => {
+    const r = importAllProjectsFromJSON(await file.text());
+    if (!r.success || !r.data) { setError(r.error || 'Could not read the backup'); return; }
+    const { added, updated, skippedNewer, invalid } = r.data;
+    setError(null);
+    setNote(`Restored: ${added} added, ${updated} updated, ${skippedNewer} kept (newer here), ${invalid} invalid`);
+    load();
+  };
+  const [note, setNote] = useState<string | null>(null);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Projects</h1>
-        <Button onClick={onCreateProject} className="h-11">
-          <Plus className="h-4 w-4" /> New project
-        </Button>
+        <div className="flex items-center gap-2">
+          {rows.length > 0 && (
+            <Button variant="outline" onClick={backupAll} className="h-11" title="Every project in one JSON file">
+              <Download className="h-4 w-4" /> Back up all
+            </Button>
+          )}
+          <Button variant="outline" className="h-11" asChild>
+            <label className="cursor-pointer">
+              <Upload className="h-4 w-4" /> Restore
+              <input type="file" accept=".json,application/json" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) restore(f); e.target.value = ''; }} />
+            </label>
+          </Button>
+          <Button onClick={onCreateProject} className="h-11">
+            <Plus className="h-4 w-4" /> New project
+          </Button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
+      {note && <p className="text-sm text-muted-foreground" role="status">{note}</p>}
 
       {rows.length === 0 ? (
         <div className="py-16 text-center text-sm text-muted-foreground max-w-md mx-auto space-y-4">

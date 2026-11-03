@@ -1,5 +1,5 @@
 import type { ProjectConfig, BarEntry } from '../types';
-import { serializeProject, deserializeProject, validateSerializedProject } from './json-serializer';
+import { serializeProject, deserializeProject, validateSerializedProject, type SerializedProject } from './json-serializer';
 
 // Storage key prefix for projects
 const PROJECT_KEY_PREFIX = 'bbs_project_';
@@ -271,4 +271,45 @@ function removeFromProjectList(id: string): void {
   const filteredList = currentList.filter(item => item.id !== id);
   
   localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(filteredList));
+}
+
+// ---- Whole-browser backup. One file, every project, so a cleared browser is not a lost floor. ----
+
+export interface BackupFile { app: 'RebarCalc'; exportedAt: string; projects: SerializedProject[] }
+
+export function exportAllProjectsAsJSON(): StorageResult<string> {
+  const list = getProjectList();
+  if (!list.success) return { success: false, error: list.error };
+  const projects: SerializedProject[] = [];
+  for (const item of list.data ?? []) {
+    const raw = localStorage.getItem(PROJECT_KEY_PREFIX + item.id);
+    if (!raw) continue;
+    try { const parsed = JSON.parse(raw); if (validateSerializedProject(parsed)) projects.push(parsed); } catch { /* skip corrupt entry, never abort the backup */ }
+  }
+  const file: BackupFile = { app: 'RebarCalc', exportedAt: new Date().toISOString(), projects };
+  return { success: true, data: JSON.stringify(file, null, 2) };
+}
+
+export interface RestoreReport { added: number; updated: number; skippedNewer: number; invalid: number }
+
+/** Merge a backup in. A project already here with a later lastModified is left alone, never overwritten. */
+export function importAllProjectsFromJSON(jsonString: string): StorageResult<RestoreReport> {
+  let parsed: unknown;
+  try { parsed = JSON.parse(jsonString); } catch { return { success: false, error: 'Not a JSON file.' }; }
+  const list = (parsed as Partial<BackupFile>)?.projects;
+  if (!Array.isArray(list)) return { success: false, error: 'Not a RebarCalc backup (no projects array).' };
+  const report: RestoreReport = { added: 0, updated: 0, skippedNewer: 0, invalid: 0 };
+  for (const entry of list) {
+    if (!validateSerializedProject(entry)) { report.invalid++; continue; }
+    const existing = localStorage.getItem(PROJECT_KEY_PREFIX + entry.config.id);
+    if (existing) {
+      let existingModified = '';
+      try { existingModified = (JSON.parse(existing) as SerializedProject).lastModified ?? ''; } catch { /* corrupt local: replace it */ }
+      if (existingModified >= entry.lastModified) { report.skippedNewer++; continue; }
+    }
+    localStorage.setItem(PROJECT_KEY_PREFIX + entry.config.id, JSON.stringify(entry));
+    updateProjectList(entry.config.id, entry.config.name, entry.lastModified);
+    if (existing) report.updated++; else report.added++;
+  }
+  return { success: true, data: report };
 }

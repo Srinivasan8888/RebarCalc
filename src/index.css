@@ -143,3 +143,11 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* Bar-bender sheet: only .print-sheet (mounted while printing) reaches paper. */
+@media print {
+  body * { visibility: hidden; }
+  .print-sheet, .print-sheet * { visibility: visible; }
+  .print-sheet { position: absolute; left: 0; top: 0; width: 100%; }
+  @page { margin: 12mm; }
+}

@@ -16,6 +16,16 @@ npm run build    # tsc -b + vite
 - **Export**: writes both layouts back with live formulas; export → import round-trips both reference workbooks.
 - **Manual mode**: legacy shape-code entry (S1–S6) with CSV import and Excel export.
 
+## Running as SaaS (optional)
+
+Without configuration the app is localStorage-only and fully usable. To add accounts, cloud copies and share links:
+
+1. Create a Supabase project and run `supabase/migrations/0001_projects.sql` in its SQL editor.
+2. In Authentication, enable the Email provider with magic link / OTP.
+3. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env.example`) in `.env.local` locally and in the Vercel project settings for deploys.
+
+Projects are always written to localStorage first, then synced. A newer copy on either side is never overwritten silently; the account menu shows what happened. Share links are read-only.
+
 ## Where to read next
 
 - `CLAUDE.md`: how the code is organised, the domain vocabulary, and the rules for changing calculations (for people and for agents).
